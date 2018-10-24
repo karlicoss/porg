@@ -32,12 +32,19 @@ def test_dates():
  :END:
 
 * etc
-* [2018-10-23 Tue 20:55] note-with-implicit-date
+* [2018-10-11 20:55] note-with-implicit-date
   sup
 ** [#A] [2018-10-23 Tue 20:55] also-priority
     """
     org = Org.from_string(ORG)
-    node = find(org, 'something')
-    print(node.created)
+
+    cc = find(org, 'something')
+    assert cc.created == '2018-10-23 Tue 20:55'
+
+    cc2 = find(org, 'etc')
+    assert cc2.created is None
+
+    cc3 = find(org, 'note-with-implicit-date')
+    assert cc3.created == '2018-10-11 20:55'
 
 

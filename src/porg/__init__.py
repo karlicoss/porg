@@ -54,7 +54,10 @@ class Org:
         pp = self.properties
         if pp is None:
             return None
-        return pp.get('CREATED', None)
+        cprop = pp.get('CREATED', None)
+        if cprop is None:
+            return None
+        return cprop.strip('[]')
 
     @property
     def _content_split(self):
