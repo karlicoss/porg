@@ -11,11 +11,16 @@ finally:
     del get_distribution, DistributionNotFound
 
 
-import re
 from datetime import datetime, date
+import logging
 from typing import List, Set, Optional, Dict, Union
+import re
+
 
 import PyOrgMode # type: ignore
+
+def get_logger():
+    return logging.getLogger('porg')
 
 def extract_org_datestr(s: str) -> Optional[str]:
     match = re.search(r'\[\d{4}-\d{2}-\d{2}.*]', s)
@@ -44,22 +49,29 @@ def parse_org_date(s: str) -> Dateish:
     else:
         raise RuntimeError(f"Bad date string {str(s)}")
 
-# def extract_date_fuzzy(s: str) -> Optional[Dateish]:
-#     import datefinder # type: ignore
-#     # TODO wonder how slow it is..
-#     dates = list(datefinder.find_dates(s))
-#     if len(dates) == 0:
-#         return None
-#     if len(dates) > 1:
-#         raise RuntimeError
-#     return dates[0]
+def extract_date_fuzzy(s: str) -> Optional[Dateish]:
+    # TODO optional dependency?
+    # TODO wonder how slow it is..
+    # TODO use warnings instead?...
+    logger = get_logger()
+    try:
+        import datefinder # type: ignore
+    except ImportError as e:
+        import warnings
+        warnings.warn("Install datefinder for fuzzy date extraction!")
+        return None
+    dates = list(datefinder.find_dates(s))
+    if len(dates) == 0:
+        return None
+    if len(dates) > 1:
+        logger.warning("Multiple dates extracted from %s. Choosing first.", s)
+    return dates[0]
 
 
 class Org:
     def __init__(self, root, parent=None):
         self.node = root
         self.parent = parent
-        # import ipdb; ipdb.set_trace()
 
     @staticmethod
     def from_file(fname: str):
@@ -79,7 +91,7 @@ class Org:
 
     @property
     def _preheading(self):
-        hh = self.node.heading #.strip() # TODO not sure about it...
+        hh = self.node.heading
         ds = extract_org_datestr(hh)
         if ds is not None:
             hh = hh.replace(ds, '') # meh, but works?
@@ -105,16 +117,16 @@ class Org:
         if ic is not None:
             return ic
 
-        # TODO also support fuzzy as in kython.org?
         return None
 
     @property
     def created(self) -> Optional[Dateish]:
         cs = self._created_str
-        if cs is None:
-            return cs
-        cs = cs.strip('[]').strip() # paranoid, but just in case
-        return parse_org_date(cs)
+        if cs is not None:
+            cs = cs.strip('[]').strip() # paranoid, but just in case
+            return parse_org_date(cs)
+        return extract_date_fuzzy(self.heading)
+
 
     @property
     def _content_split(self):
@@ -141,6 +153,19 @@ class Org:
     @property
     def content(self) -> str:
         return self._content_split[0]
+
+    # TODO better name?...
+    @property
+    def content_recursive(self) -> str:
+        res = []
+        head = False
+        for n in self.iterate():
+            if not head:
+                head = True
+            else:
+                res.append(n.heading)
+            res.append(n.content)
+        return ''.join(res)
 
     @property
     def properties(self) -> Optional[Dict[str, str]]:

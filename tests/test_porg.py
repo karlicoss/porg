@@ -16,7 +16,12 @@ def find(org: Org, heading: str):
     [node] = ([n for n in org.iterate() if n.heading == heading])
     return node
 
+def match(org: Org, hpart: str):
+    [node] = ([n for n in org.iterate() if hpart in n.heading])
+    return node
+
 def test_fib():
+    # TODO import this file in project
     fname = "/L/repos/PyOrgMode/PyOrgMode/test.org"
     org = Org.from_file(fname)
     # TODO scheduling test / clock / properties
@@ -39,6 +44,11 @@ def test_dates():
 ** [#A] [2018-10-23 Tue 20:55] also-priority
 
 * [2010-01-03 Fri  ] messed-up
+
+* DONE TODO from-kindle Added on Tuesday, October 31, 2017 12:37:24 PM
+    this is from kindle...
+    TODO ugh, the date probably gets eaten by org parser...
+
     """
     org = Org.from_string(ORG)
 
@@ -52,5 +62,10 @@ def test_dates():
     assert cc3.created == datetime(year=2018, month=10, day=11, hour=20, minute=55)
 
     cc4 = find(org, 'messed-up')
-    assert cc3.created is not None
+    assert cc4.created is not None
+
+    cc5 = match(org, 'from-kindle')
+    assert cc5.created is not None
+    # TODO FIXME must be issue in org parser (look at cc5.heading)
+    # assert cc5.created == datetime(year=2017, month=10, day=31, hour=12, minute=37, second=24)
 
