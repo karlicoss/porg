@@ -16,8 +16,8 @@ import logging
 from typing import List, Set, Optional, Dict, Union
 import re
 
-
 import PyOrgMode # type: ignore
+
 
 def get_logger():
     return logging.getLogger('porg')
