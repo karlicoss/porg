@@ -42,7 +42,7 @@ def parse_org_date(s: str) -> Dateish:
         except ValueError:
             continue
     else:
-        raise RuntimeError(f"Bad date string {s}")
+        raise RuntimeError(f"Bad date string {str(s)}")
 
 # def extract_date_fuzzy(s: str) -> Optional[Dateish]:
 #     import datefinder # type: ignore
@@ -100,10 +100,10 @@ class Org:
         if pp is not None:
             cprop = pp.get('CREATED', None)
             if cprop is not None:
-                return cprop.strip('[]')
+                return cprop
         ic = self._implicit_created
         if ic is not None:
-            return ic.strip('[]')
+            return ic
 
         # TODO also support fuzzy as in kython.org?
         return None
@@ -113,6 +113,7 @@ class Org:
         cs = self._created_str
         if cs is None:
             return cs
+        cs = cs.strip('[]').strip() # paranoid, but just in case
         return parse_org_date(cs)
 
     @property

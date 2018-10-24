@@ -37,6 +37,8 @@ def test_dates():
 * [2018-10-11 20:55] note-with-implicit-date
   sup
 ** [#A] [2018-10-23 Tue 20:55] also-priority
+
+* [2010-01-03 Fri  ] messed-up
     """
     org = Org.from_string(ORG)
 
@@ -49,4 +51,6 @@ def test_dates():
     cc3 = find(org, 'note-with-implicit-date')
     assert cc3.created == datetime(year=2018, month=10, day=11, hour=20, minute=55)
 
+    cc4 = find(org, 'messed-up')
+    assert cc3.created is not None
 
