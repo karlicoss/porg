@@ -12,7 +12,8 @@ finally:
 
 
 import re
-from typing import List, Set, Optional, Dict
+from datetime import datetime, date
+from typing import List, Set, Optional, Dict, Union
 
 import PyOrgMode # type: ignore
 
@@ -22,6 +23,26 @@ def extract_org_datestr(s: str) -> Optional[str]:
         return None
     else:
         return match.group(0)
+
+Dateish = Union[datetime, date]
+
+def parse_org_date(s: str) -> Dateish:
+    for fmt, cl in [
+            ("%Y-%m-%d %a %H:%M", datetime),
+            ("%Y-%m-%d %H:%M", datetime),
+            ("%Y-%m-%d %a", date),
+            ("%Y-%m-%d", date),
+    ]:
+        try:
+            res = datetime.strptime(s, fmt)
+            if cl == date:
+                return res.date()
+            else:
+                return res
+        except ValueError:
+            continue
+    else:
+        raise RuntimeError(f"Bad date string {s}")
 
 # def extract_date_fuzzy(s: str) -> Optional[Dateish]:
 #     import datefinder # type: ignore
@@ -74,7 +95,7 @@ class Org:
 
     # TODO cache..
     @property
-    def created(self) -> Optional[str]:
+    def _created_str(self) -> Optional[str]:
         pp = self.properties
         if pp is not None:
             cprop = pp.get('CREATED', None)
@@ -86,6 +107,13 @@ class Org:
 
         # TODO also support fuzzy as in kython.org?
         return None
+
+    @property
+    def created(self) -> Optional[Dateish]:
+        cs = self._created_str
+        if cs is None:
+            return cs
+        return parse_org_date(cs)
 
     @property
     def _content_split(self):

@@ -3,6 +3,8 @@
 
 import pytest
 
+from datetime import datetime
+
 from porg import Org
 
 __author__ = "Dima Gerasimov"
@@ -39,12 +41,12 @@ def test_dates():
     org = Org.from_string(ORG)
 
     cc = find(org, 'something')
-    assert cc.created == '2018-10-23 Tue 20:55'
+    assert cc.created == datetime(year=2018, month=10, day=23, hour=20, minute=55)
 
     cc2 = find(org, 'etc')
     assert cc2.created is None
 
     cc3 = find(org, 'note-with-implicit-date')
-    assert cc3.created == '2018-10-11 20:55'
+    assert cc3.created == datetime(year=2018, month=10, day=11, hour=20, minute=55)
 
 
