@@ -75,7 +75,7 @@ class Org:
 
     @property
     def tags(self) -> Set[str]:
-        return set(self.node.tags) # TODO get_all_tags??
+        return set(sorted(self.node.get_all_tags()))
 
     @property
     def _preheading(self):
