@@ -34,6 +34,11 @@ class Org:
         base.load_from_file(fname)
         return Org(base.root)
 
+    @staticmethod
+    def from_string(s: str):
+        base = PyOrgMode.OrgDataStructure()
+        base.load_from_string(s)
+        return Org(base.root)
 
     @property
     def tags(self) -> Set[str]:
@@ -41,9 +46,15 @@ class Org:
 
     @property
     def heading(self) -> str:
-        return self.node.heading
+        return self.node.heading #.strip() # TODO not sure about it...
 
-    # TODO recursive vs non recursive??
+    # TODO cache..
+    @property
+    def created(self) -> Optional[str]:
+        pp = self.properties
+        if pp is None:
+            return None
+        return pp.get('CREATED', None)
 
     @property
     def _content_split(self):
