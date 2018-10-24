@@ -83,6 +83,8 @@ class Org:
         ic = self._implicit_created
         if ic is not None:
             return ic.strip('[]')
+
+        # TODO also support fuzzy as in kython.org?
         return None
 
     @property
@@ -136,11 +138,13 @@ class Org:
         return self.node.level
 
     # TODO handle table elements
-    def iterate(self):
-        # import ipdb; ipdb.set_trace() 
+    # None means infinite
+    def iterate(self, depth=None):
         yield self
+        if depth == 0:
+            return
         for c in self.children:
-            yield from c.iterate()
+            yield from c.iterate(None if depth is None else depth - 1)
         # yield from self.children
 
     def __repr__(self):
@@ -149,5 +153,6 @@ class Org:
     # TODO tags with inherited??
     # TODO parent caches its tags??
 
+    # TODO line numbers
 
 __all__ = ['Org']
