@@ -11,16 +11,28 @@ finally:
     del get_distribution, DistributionNotFound
 
 
-# TODO ok I need to build some sort of tree first
-# tree is built on a set of documents? or for starters, single file is hopefully enough
-# TODO mm, not sure. maybe I don't even need to warp anything? althouh my wrappers would def be nicer..
-
-
+import re
 from typing import List, Set, Optional, Dict
 
 import PyOrgMode # type: ignore
 
-import sys, ipdb, traceback; exec("def info(type, value, tb):\n    traceback.print_exception(type, value, tb)\n    ipdb.pm()"); sys.excepthook = info # type: ignore
+def extract_org_datestr(s: str) -> Optional[str]:
+    match = re.search(r'\[\d{4}-\d{2}-\d{2}.*]', s)
+    if not match:
+        return None
+    else:
+        return match.group(0)
+
+# def extract_date_fuzzy(s: str) -> Optional[Dateish]:
+#     import datefinder # type: ignore
+#     # TODO wonder how slow it is..
+#     dates = list(datefinder.find_dates(s))
+#     if len(dates) == 0:
+#         return None
+#     if len(dates) > 1:
+#         raise RuntimeError
+#     return dates[0]
+
 
 class Org:
     def __init__(self, root, parent=None):
@@ -45,19 +57,33 @@ class Org:
         return set(self.node.tags) # TODO get_all_tags??
 
     @property
+    def _preheading(self):
+        hh = self.node.heading #.strip() # TODO not sure about it...
+        ds = extract_org_datestr(hh)
+        if ds is not None:
+            hh = hh.replace(ds, '') # meh, but works?
+        return (hh, ds)
+
+    @property
+    def _implicit_created(self) -> Optional[str]:
+        return self._preheading[1]
+
+    @property
     def heading(self) -> str:
-        return self.node.heading #.strip() # TODO not sure about it...
+        return self._preheading[0].strip()
 
     # TODO cache..
     @property
     def created(self) -> Optional[str]:
         pp = self.properties
-        if pp is None:
-            return None
-        cprop = pp.get('CREATED', None)
-        if cprop is None:
-            return None
-        return cprop.strip('[]')
+        if pp is not None:
+            cprop = pp.get('CREATED', None)
+            if cprop is not None:
+                return cprop.strip('[]')
+        ic = self._implicit_created
+        if ic is not None:
+            return ic.strip('[]')
+        return None
 
     @property
     def _content_split(self):
@@ -124,3 +150,4 @@ class Org:
     # TODO parent caches its tags??
 
 
+__all__ = ['Org']
