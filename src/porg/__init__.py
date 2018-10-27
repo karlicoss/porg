@@ -69,21 +69,43 @@ def extract_date_fuzzy(s: str) -> Optional[Dateish]:
     return dates[0]
 
 class Org:
-    def __init__(self, root, parent=None):
+    def __init__(self, root, cid, parent=None):
         self.node = root
         self.parent = parent
+        self.cid = cid # child id, for reconstructing from xpath..
 
     @staticmethod
     def from_file(fname: str):
         base = PyOrgMode.OrgDataStructure()
         base.load_from_file(fname)
-        return Org(base.root)
+        return Org(base.root, cid=None)
 
     @staticmethod
     def from_string(s: str):
         base = PyOrgMode.OrgDataStructure()
         base.load_from_string(s)
-        return Org(base.root)
+        return Org(base.root, cid=None)
+
+    # TODO cache it as well..?
+    @property
+    def _path(self) -> List[str]:
+        if self.cid is None:
+            return []
+        else:
+            prev = [] if self.parent == None else self.parent._path
+            prev.append(self.cid)
+            return prev
+
+    @property
+    def _xpath_helper(self) -> str:
+        return ','.join(map(str, self._path))
+
+    def _by_xpath_helper(self, helper: str) -> 'Org':
+        helpers = helper.split(',')
+        cur = self
+        for cid in helpers:
+            cur = cur.children[int(cid)]
+        return cur
 
     @property
     def tags(self) -> Set[str]:
@@ -185,7 +207,7 @@ class Org:
     def children(self) -> List['Org']:
         # Deadline = PyOrgMode.OrgD
         # TODO scheduled/deadline things -- handled separately
-        return [Org(c, self) for c in self._content_split[1]]
+        return [Org(c, cid, parent=self) for cid, c in enumerate(self._content_split[1])]
 
     @property
     def level(self):
@@ -206,8 +228,10 @@ class Org:
 
     # TODO line numbers
 
+    # TODO choose date format?
     def as_xml(self) -> ET.Element:
         ee = ET.Element('org')
+        ee.set('xpath_helper', self._xpath_helper)
         he = ET.SubElement(ee, 'heading')
         he.text = self.heading
         ce = ET.SubElement(ee, 'children')
@@ -217,6 +241,9 @@ class Org:
 
     def query(self, q: str):
         xml = self.as_xml()
-        return xml.xpath(q)
+        ress = xml.xpath(q) # TODO handle in  some nicer way?..
+        r = ress[0]
+        xh = r.get('xpath_helper')
+        return self._by_xpath_helper(xh)
 
 __all__ = ['Org']

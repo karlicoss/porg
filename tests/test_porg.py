@@ -76,6 +76,8 @@ def test_dates():
 
 def test_query():
     org = load_test_file()
-    print(org.query("//org[contains(heading, 'TAGS TEST')]"))
-    # TODO ok, how to get the org entry back?
-    # TODO use some sort of id?
+
+    res = org.query("//org[contains(heading, 'TAGS TEST')]") # TODO also query_all?
+
+    assert res.heading == 'TAGS TEST'
+    assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
