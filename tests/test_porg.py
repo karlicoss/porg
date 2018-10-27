@@ -104,6 +104,9 @@ def test_dates():
 def test_xpath():
     org = load_test_file()
 
+    root = org.xpath('//root')
+    assert root == org
+
     res = org.xpath("//org[contains(heading, 'TAGS TEST')]")
 
     assert res.heading == 'TAGS TEST'

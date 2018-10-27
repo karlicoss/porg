@@ -195,7 +195,11 @@ class Org(Base):
         return Org(base.root, cid=None, parent=None)
 
     def _by_xpath_helper(self, helper: str) -> 'Org':
-        helpers = helper.split(',')
+        helpers: List[str]
+        if helper == '':
+            helpers = []
+        else:
+            helpers = helper.split(',')
         cur = self
         for cidstr in helpers:
             cid = Cid.deserialise(cidstr)
@@ -349,7 +353,7 @@ class Org(Base):
 
     # TODO choose date format?
     def as_xml(self) -> ET.Element:
-        ee = ET.Element('org')
+        ee = ET.Element('root' if self.parent is None else 'org')
         ee.set('xpath_helper', self._xpath_helper)
         he = ET.SubElement(ee, 'heading')
         he.text = self.heading
