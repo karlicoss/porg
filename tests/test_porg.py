@@ -104,7 +104,10 @@ def test_table():
     tparent = org.xpath("//org[contains(heading, 'Table test')]")
     [table] = tparent.contents
     assert table.columns == ['elsbl', 'lesél', 'lseilép']
-    print(table)
+
+    assert table[(0, 'elsbl')] == 'dlitsléb'
+
+    assert len(list(table.lines)) == 2
 
     # TODO ok, tables will be kinda like dummy children? 
     # tentry = org.xpath("//table")

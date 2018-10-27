@@ -102,11 +102,19 @@ class OrgTable:
     def __init__(self, root, parent=None):
         self.parent = parent
         self.table = _parse_org_table(root)
-        # TODO parse it from table entry
 
     @property
     def columns(self) -> List[str]:
         return list(self.table[0].keys())
+
+    @property
+    def lines(self):
+        for l in self.table:
+            yield l
+
+    def __getitem__(self, idx):
+        (line, col) = idx # TODO not sure if it's a good idea..
+        return self.table[line][col]
 
     def __repr__(self):
         return "OrgTable{" + repr(self.table) + "}"
