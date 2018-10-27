@@ -5,7 +5,7 @@ import pytest
 
 from datetime import datetime
 
-from porg import Org
+from porg import Org, OrgTable
 
 __author__ = "Dima Gerasimov"
 __copyright__ = "Dima Gerasimov"
@@ -33,9 +33,7 @@ def test_basic():
     node = find(org, 'CLOCK')
     assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
 
-
-def test_dates():
-    ORG = """
+ORG = """
 * Hello
 ** something
  :PROPERTIES:
@@ -60,7 +58,19 @@ def test_dates():
     ugh. so the issue is actually with missing '0' before 8 on kindle
 
 * Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM"
+
+* xpath_target
+ some text...
+
+| table | a |
+|-------+---|
+| xxx   | 1 |
+| yyy   | 2 |
+
+more text
     """
+
+def test_dates():
     org = Org.from_string(ORG)
 
     cc = find(org, 'something')
@@ -98,6 +108,20 @@ def test_xpath():
     assert res.heading == 'TAGS TEST'
     assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
 
+def test_xpath_helper():
+    o = Org.from_string(ORG)
+    assert o._xpath_helper == ''
+
+    ch1 = o.children[1]
+    assert ch1._xpath_helper == 'child|1'
+
+
+    xx = o.xpath("//org[contains(heading, 'xpath_target')]")
+    tbl = xx.contents[1]
+    assert isinstance(tbl, OrgTable)
+
+    assert tbl._xpath_helper == 'child|7,content|1'
+
 def test_table():
     org = load_test_file()
 
@@ -109,7 +133,11 @@ def test_table():
 
     assert len(list(table.lines)) == 2
 
-    # TODO ok, tables will be kinda like dummy children? 
-    # tentry = org.xpath("//table")
-    # print(tentry)
+
+def test_table_xpath():
+    org = load_test_file()
+
+    tentry = org.xpath("//table")
+
+    assert isinstance(tentry, OrgTable)
 

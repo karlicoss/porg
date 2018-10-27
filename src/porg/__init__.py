@@ -13,6 +13,7 @@ finally:
 
 from datetime import datetime, date
 import logging
+from itertools import groupby
 from typing import List, Set, Optional, Dict, Union
 import re
 from lxml import etree as ET # type: ignore
@@ -56,6 +57,42 @@ def is_crazy_date(d: Dateish) -> bool:
     YEAR = datetime.now().year
     return not (YEAR - 100 <= d.year <= YEAR + 5)
 
+"""
+actually it's more like an iterator over tree right?
+
+TODO hmm. maybe that was an overkill and I could have just mapped full xpath expression back..
+"""
+class Cid:
+    def __init__(self, where: str, cid: int) -> None:
+        self.where = where
+        self.cid = cid
+
+    @staticmethod
+    def child(cid: int):
+        return Cid('child', cid)
+
+    @staticmethod
+    def content(cid: int):
+        return Cid('content', cid)
+
+    def serialise(self):
+        return f'{self.where}|{self.cid}'
+
+    @staticmethod
+    def deserialise(cs):
+        [where, cid] = cs.split('|')
+        return Cid(where, int(cid))
+
+    def locate(self, orgnote):
+        if self.where == 'child':
+            return orgnote.children[self.cid]
+        elif self.where == 'content':
+            return orgnote.contents[self.cid]
+        else:
+            raise RuntimeError(self.where)
+
+    def __repr__(self):
+        return 'Cid{' + self.where + ',' + str(self.cid) + '}'
 
 _HACK_RE = re.compile(r'\s(?P<time>\d{3}) (AM|PM)($|\s)')
 
@@ -98,9 +135,29 @@ def _parse_org_table(table) -> List[Dict[str, str]]:
         res.append(d)
     return res
 
-class OrgTable:
-    def __init__(self, root, parent=None):
+# TODO err.. needs a better name
+class Base:
+    def __init__(self, cid, parent):
         self.parent = parent
+        self.cid = cid
+
+    # TODO cache it as well..?
+    @property
+    def _path(self) -> List[Cid]:
+        if self.cid is None:
+            return []
+        else:
+            prev = [] if self.parent == None else self.parent._path
+            prev.append(self.cid)
+            return prev
+
+    @property
+    def _xpath_helper(self) -> str:
+        return ','.join(map(lambda c: c.serialise(), self._path))
+
+class OrgTable(Base):
+    def __init__(self, root, cid, parent):
+        super().__init__(cid=cid, parent=parent)
         self.table = _parse_org_table(root)
 
     @property
@@ -119,43 +176,29 @@ class OrgTable:
     def __repr__(self):
         return "OrgTable{" + repr(self.table) + "}"
 
-class Org:
-    def __init__(self, root, cid, parent=None):
+class Org(Base):
+    def __init__(self, root, cid, parent):
+        super().__init__(cid=cid, parent=parent)
         self.node = root
-        self.parent = parent
-        self.cid = cid # child id, for reconstructing from xpath..
 
     @staticmethod
     def from_file(fname: str):
         base = PyOrgMode.OrgDataStructure()
         base.load_from_file(fname)
-        return Org(base.root, cid=None)
+        return Org(base.root, cid=None, parent=None)
 
     @staticmethod
     def from_string(s: str):
         base = PyOrgMode.OrgDataStructure()
         base.load_from_string(s)
-        return Org(base.root, cid=None)
-
-    # TODO cache it as well..?
-    @property
-    def _path(self) -> List[str]:
-        if self.cid is None:
-            return []
-        else:
-            prev = [] if self.parent == None else self.parent._path
-            prev.append(self.cid)
-            return prev
-
-    @property
-    def _xpath_helper(self) -> str:
-        return ','.join(map(str, self._path))
+        return Org(base.root, cid=None, parent=None)
 
     def _by_xpath_helper(self, helper: str) -> 'Org':
         helpers = helper.split(',')
         cur = self
-        for cid in helpers:
-            cur = cur.children[int(cid)]
+        for cidstr in helpers:
+            cid = Cid.deserialise(cidstr)
+            cur = cid.locate(cur)
         return cur
 
     @property
@@ -219,16 +262,34 @@ class Org:
                 assert props is None
                 props = c
             elif isinstance(c, Table):
-                cont.append(OrgTable(c))
+                cont.append(c)
             elif not isinstance(c, (Scheduled,)):
                 elems.append(c)
         return (cont, elems, props)
 
-    # TODO ok, contents are list of nonhonmogenous things.. content is alwasy string?
-
     @property
     def contents(self):
-        return self._content_split[0]
+        Table = PyOrgMode.OrgTable.Element
+
+        raw_conts = self._content_split[0]
+
+
+        conts = []
+        for t, g in groupby(raw_conts, key=lambda c: type(c)):
+            if t == type(''): # meh
+                conts.append(''.join(g))
+            else:
+                conts.extend(g)
+
+        res = []
+        for cid, c in enumerate(conts):
+            if isinstance(c, str):
+                res.append(c)
+            elif isinstance(c, Table):
+                res.append(OrgTable(c, cid=Cid.content(cid), parent=self))
+            else:
+                raise RuntimeError(f"Unexpected type {type(c)}")
+        return res
 
     @property
     def content(self) -> str:
@@ -266,7 +327,7 @@ class Org:
     @property
     def children(self) -> List['Org']:
         # TODO scheduled/deadline things -- handled separately
-        return [Org(c, cid, parent=self) for cid, c in enumerate(self._content_split[1])]
+        return [Org(c, Cid.child(cid), parent=self) for cid, c in enumerate(self._content_split[1])]
 
     @property
     def level(self):
@@ -292,9 +353,23 @@ class Org:
         ee.set('xpath_helper', self._xpath_helper)
         he = ET.SubElement(ee, 'heading')
         he.text = self.heading
+        cne = ET.SubElement(ee, 'contents')
+
+        # TODO maybe, strings going one after another should be merged? implement a test for that..
+        for c in self.contents:
+            if isinstance(c, str):
+                elem = ET.SubElement(cne, 'text')
+                elem.text = c
+            elif isinstance(c, OrgTable):
+                telem = ET.SubElement(cne, 'table')
+                telem.set('xpath_helper', c._xpath_helper)
+            else:
+                raise RuntimeError(f'Unexpected type {type(c)}')
+
+
         ce = ET.SubElement(ee, 'children')
-        chxml = [c.as_xml() for c in self.children]
-        ce.extend(chxml)
+        child_xmls = [c.as_xml() for c in self.children]
+        ce.extend(child_xmls)
         return ee
 
     def xpath(self, q: str) -> List['Org']:
@@ -303,8 +378,8 @@ class Org:
 
     def xpath_all(self, q: str):
         xml = self.as_xml()
-        ress = xml.xpath(q) # TODO handle in  some nicer way?..
-        return [self._by_xpath_helper(x.get('xpath_helper')) for x in ress]
+        xelems = xml.xpath(q)
+        return [self._by_xpath_helper(x.attrib['xpath_helper']) for x in xelems]
 
 
-__all__ = ['Org']
+__all__ = ['Org', 'OrgTable']
