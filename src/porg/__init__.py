@@ -15,6 +15,7 @@ from datetime import datetime, date
 import logging
 from typing import List, Set, Optional, Dict, Union
 import re
+from lxml import etree as ET # type: ignore
 
 import PyOrgMode # type: ignore
 
@@ -66,7 +67,6 @@ def extract_date_fuzzy(s: str) -> Optional[Dateish]:
     if len(dates) > 1:
         logger.warning("Multiple dates extracted from %s. Choosing first.", s)
     return dates[0]
-
 
 class Org:
     def __init__(self, root, parent=None):
@@ -199,14 +199,24 @@ class Org:
             return
         for c in self.children:
             yield from c.iterate(None if depth is None else depth - 1)
-        # yield from self.children
 
     def __repr__(self):
         return 'Org{{{}}}'.format(self.heading)
-    # TODO tags??
-    # TODO tags with inherited??
     # TODO parent caches its tags??
 
     # TODO line numbers
+
+    def as_xml(self) -> ET.Element:
+        ee = ET.Element('org')
+        he = ET.SubElement(ee, 'heading')
+        he.text = self.heading
+        ce = ET.SubElement(ee, 'children')
+        chxml = [c.as_xml() for c in self.children]
+        ce.extend(chxml)
+        return ee
+
+    def query(self, q: str):
+        xml = self.as_xml()
+        return xml.xpath(q)
 
 __all__ = ['Org']

@@ -20,10 +20,14 @@ def match(org: Org, hpart: str):
     [node] = ([n for n in org.iterate() if hpart in n.heading])
     return node
 
-def test_fib():
+def load_test_file():
     # TODO import this file in project
     fname = "/L/repos/PyOrgMode/PyOrgMode/test.org"
-    org = Org.from_file(fname)
+    return Org.from_file(fname)
+
+
+def test_basic():
+    org = load_test_file()
     # TODO scheduling test / clock / properties
     assert 'xxxx' in org.tags
     node = find(org, 'CLOCK')
@@ -69,3 +73,9 @@ def test_dates():
     # TODO FIXME must be issue in org parser (look at cc5.heading)
     # assert cc5.created == datetime(year=2017, month=10, day=31, hour=12, minute=37, second=24)
 
+
+def test_query():
+    org = load_test_file()
+    print(org.query("//org[contains(heading, 'TAGS TEST')]"))
+    # TODO ok, how to get the org entry back?
+    # TODO use some sort of id?
