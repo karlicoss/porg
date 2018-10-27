@@ -97,3 +97,16 @@ def test_xpath():
 
     assert res.heading == 'TAGS TEST'
     assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
+
+def test_table():
+    org = load_test_file()
+
+    tparent = org.xpath("//org[contains(heading, 'Table test')]")
+    [table] = tparent.contents
+    assert table.columns == ['elsbl', 'lesél', 'lseilép']
+    print(table)
+
+    # TODO ok, tables will be kinda like dummy children? 
+    # tentry = org.xpath("//table")
+    # print(tentry)
+

@@ -17,6 +17,8 @@ from typing import List, Set, Optional, Dict, Union
 import re
 from lxml import etree as ET # type: ignore
 
+import warnings
+
 import PyOrgMode # type: ignore
 
 
@@ -63,7 +65,6 @@ def extract_date_fuzzy(s: str) -> Optional[Dateish]:
     try:
         import datefinder # type: ignore
     except ImportError as e:
-        import warnings
         warnings.warn("Install datefinder for fuzzy date extraction!")
         return None
 
@@ -85,6 +86,30 @@ def extract_date_fuzzy(s: str) -> Optional[Dateish]:
     if len(dates) > 1:
         logger.warning("Multiple dates extracted from %s. Choosing first.", s)
     return dates[0]
+
+def _parse_org_table(table) -> List[Dict[str, str]]:
+    # TODO with_header?
+    cols = [s.strip() for s in table.content[0]]
+    idx = dict(enumerate(cols))
+    res = []
+    for row in table.content[2:]:
+        d = {}
+        for i, val in enumerate(row): d[idx[i]] = val.strip()
+        res.append(d)
+    return res
+
+class OrgTable:
+    def __init__(self, root, parent=None):
+        self.parent = parent
+        self.table = _parse_org_table(root)
+        # TODO parse it from table entry
+
+    @property
+    def columns(self) -> List[str]:
+        return list(self.table[0].keys())
+
+    def __repr__(self):
+        return "OrgTable{" + repr(self.table) + "}"
 
 class Org:
     def __init__(self, root, cid, parent=None):
@@ -167,7 +192,6 @@ class Org:
             return parse_org_date(cs)
         return extract_date_fuzzy(self.heading)
 
-
     @property
     def _content_split(self):
         Table = PyOrgMode.OrgTable.Element
@@ -175,24 +199,33 @@ class Org:
         Properties = PyOrgMode.OrgDrawer.Element
 
         cc = self.node.content
-        cont = ""
+        cont = []
         elems = []
         props = None
         for i, c in enumerate(cc):
             if isinstance(c, str):
                 # NOTE ok, various unparsed properties can be str... so we just concatenate them
                 # assert len(elems) == 0
-                cont += c
+                cont.append(c)
             elif isinstance(c, Properties):
                 assert props is None
                 props = c
-            elif not isinstance(c, (Table, Scheduled)):
+            elif isinstance(c, Table):
+                cont.append(OrgTable(c))
+            elif not isinstance(c, (Scheduled,)):
                 elems.append(c)
         return (cont, elems, props)
 
+    # TODO ok, contents are list of nonhonmogenous things.. content is alwasy string?
+
+    @property
+    def contents(self):
+        return self._content_split[0]
+
     @property
     def content(self) -> str:
-        return self._content_split[0]
+        conts = self.contents
+        return ''.join(c if isinstance(c, str) else str(c) for c in conts)
 
     # TODO better name?...
     @property
@@ -215,15 +248,15 @@ class Org:
             return None
         props = {} # TODO ordered??
         for p in pp.content:
-            if not isinstance(p, Property): # eh, rare, but can happen apparently..
+            if not isinstance(p, Property):
+                # TODO can it actually happen?..
+                warnings.warn("{} is not instance of Property".format(p))
                 continue
             props[p.name] = p.value
         return props
 
-    # TODO parent
     @property
     def children(self) -> List['Org']:
-        # Deadline = PyOrgMode.OrgD
         # TODO scheduled/deadline things -- handled separately
         return [Org(c, cid, parent=self) for cid, c in enumerate(self._content_split[1])]
 
@@ -231,7 +264,6 @@ class Org:
     def level(self):
         return self.node.level
 
-    # TODO handle table elements
     # None means infinite
     def iterate(self, depth=None):
         yield self
