@@ -50,6 +50,10 @@ def parse_org_date(s: str) -> Dateish:
     else:
         raise RuntimeError(f"Bad date string {str(s)}")
 
+def is_crazy_date(d: Dateish) -> bool:
+    YEAR = datetime.now().year
+    return not (YEAR - 100 <= d.year <= YEAR + 5)
+
 def extract_date_fuzzy(s: str) -> Optional[Dateish]:
     # TODO optional dependency?
     # TODO wonder how slow it is..
@@ -62,6 +66,8 @@ def extract_date_fuzzy(s: str) -> Optional[Dateish]:
         warnings.warn("Install datefinder for fuzzy date extraction!")
         return None
     dates = list(datefinder.find_dates(s))
+    dates = [d for d in dates if not is_crazy_date(d)]
+
     if len(dates) == 0:
         return None
     if len(dates) > 1:

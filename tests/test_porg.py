@@ -53,6 +53,12 @@ def test_dates():
     this is from kindle...
     TODO ugh, the date probably gets eaten by org parser...
 
+* froalala
+** Your Highlight on Location 392-393 | Added on Friday, April 13, 2018 8:51:38 AM
+    TODO fuck, this entry gets eaten up too up to the point timestamp is not parsing
+    maybe I need to replace non-tag colon sequences manually before passing to pyorgmode?
+
+* Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM"
     """
     org = Org.from_string(ORG)
 
@@ -72,6 +78,10 @@ def test_dates():
     assert cc5.created is not None
     # TODO FIXME must be issue in org parser (look at cc5.heading)
     # assert cc5.created == datetime(year=2017, month=10, day=31, hour=12, minute=37, second=24)
+
+    cc6 = match(org, 'Your Highlight on page 153')
+    assert cc6.created is not None
+    assert cc6.created.year == 2017
 
 
 def test_query():
