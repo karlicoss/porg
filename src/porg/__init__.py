@@ -36,6 +36,7 @@ def extract_org_datestr(s: str) -> Optional[str]:
 Dateish = Union[datetime, date]
 
 def parse_org_date(s: str) -> Dateish:
+    s = s.strip('[]').strip() # just in case
     for fmt, cl in [
             ("%Y-%m-%d %a %H:%M", datetime),
             ("%Y-%m-%d %H:%M", datetime),
@@ -239,7 +240,6 @@ class Org(Base):
     def created(self) -> Optional[Dateish]:
         cs = self._created_str
         if cs is not None:
-            cs = cs.strip('[]').strip() # paranoid, but just in case
             return parse_org_date(cs)
         return extract_date_fuzzy(self.heading)
 
@@ -382,4 +382,4 @@ class Org(Base):
         return [self._by_xpath_helper(x.attrib['xpath_helper']) for x in xelems]
 
 
-__all__ = ['Org', 'OrgTable']
+__all__ = ['Org', 'OrgTable', 'parse_org_date']

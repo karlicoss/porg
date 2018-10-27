@@ -53,7 +53,8 @@ ORG = """
 
 * froalala
 ** Your Highlight on Location 392-393 | Added on Friday, April 13, 2018 8:51:38 AM
-    TODO FIXME fuck, this entry gets eaten up too up to the point timestamp is not parsing
+    TODO fuck, this entry gets eaten up too up to the point timestamp is not parsing (ends up being 851 AM)
+    hacked in porg for now..
     maybe I need to replace non-tag colon sequences manually before passing to pyorgmode?
     ugh. so the issue is actually with missing '0' before 8 on kindle
 
