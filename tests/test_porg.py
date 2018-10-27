@@ -57,6 +57,7 @@ def test_dates():
 ** Your Highlight on Location 392-393 | Added on Friday, April 13, 2018 8:51:38 AM
     TODO FIXME fuck, this entry gets eaten up too up to the point timestamp is not parsing
     maybe I need to replace non-tag colon sequences manually before passing to pyorgmode?
+    ugh. so the issue is actually with missing '0' before 8 on kindle
 
 * Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM"
     """
@@ -77,11 +78,16 @@ def test_dates():
     cc5 = match(org, 'from-kindle')
     assert cc5.created is not None
     # TODO FIXME must be issue in org parser (look at cc5.heading)
+    assert cc5.created.year == 2017
     # assert cc5.created == datetime(year=2017, month=10, day=31, hour=12, minute=37, second=24)
 
     cc6 = match(org, 'Your Highlight on page 153')
     assert cc6.created is not None
     assert cc6.created.year == 2017
+
+    cc7 = match(org, 'Your Highlight on Location')
+    # will fix later...
+    assert cc7.created is not None
 
 
 def test_xpath():

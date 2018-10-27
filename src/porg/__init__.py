@@ -54,10 +54,11 @@ def is_crazy_date(d: Dateish) -> bool:
     YEAR = datetime.now().year
     return not (YEAR - 100 <= d.year <= YEAR + 5)
 
+
+_HACK_RE = re.compile(r'\s(?P<time>\d{3}) (AM|PM)($|\s)')
+
 def extract_date_fuzzy(s: str) -> Optional[Dateish]:
-    # TODO optional dependency?
     # TODO wonder how slow it is..
-    # TODO use warnings instead?...
     logger = get_logger()
     try:
         import datefinder # type: ignore
@@ -65,6 +66,17 @@ def extract_date_fuzzy(s: str) -> Optional[Dateish]:
         import warnings
         warnings.warn("Install datefinder for fuzzy date extraction!")
         return None
+
+    # try to hack AM/PM dates without leading zero
+    mm = _HACK_RE.search(s)
+    if mm is not None:
+        start = mm.span()[0] + 1
+        tgroup = mm.group('time')
+        s = s[:start] + '0' + s[start:]
+
+    # could remove this after I fix the org mode tag issuell..
+
+
     dates = list(datefinder.find_dates(s))
     dates = [d for d in dates if not is_crazy_date(d)]
 
