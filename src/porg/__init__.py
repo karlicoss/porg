@@ -245,11 +245,14 @@ class Org:
         ce.extend(chxml)
         return ee
 
-    def query(self, q: str):
+    def xpath(self, q: str) -> List['Org']:
+        [res] = self.xpath_all(q)
+        return res
+
+    def xpath_all(self, q: str):
         xml = self.as_xml()
         ress = xml.xpath(q) # TODO handle in  some nicer way?..
-        r = ress[0]
-        xh = r.get('xpath_helper')
-        return self._by_xpath_helper(xh)
+        return [self._by_xpath_helper(x.get('xpath_helper')) for x in ress]
+
 
 __all__ = ['Org']

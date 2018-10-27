@@ -55,7 +55,7 @@ def test_dates():
 
 * froalala
 ** Your Highlight on Location 392-393 | Added on Friday, April 13, 2018 8:51:38 AM
-    TODO fuck, this entry gets eaten up too up to the point timestamp is not parsing
+    TODO FIXME fuck, this entry gets eaten up too up to the point timestamp is not parsing
     maybe I need to replace non-tag colon sequences manually before passing to pyorgmode?
 
 * Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM"
@@ -84,10 +84,10 @@ def test_dates():
     assert cc6.created.year == 2017
 
 
-def test_query():
+def test_xpath():
     org = load_test_file()
 
-    res = org.query("//org[contains(heading, 'TAGS TEST')]") # TODO also query_all?
+    res = org.xpath("//org[contains(heading, 'TAGS TEST')]")
 
     assert res.heading == 'TAGS TEST'
     assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
