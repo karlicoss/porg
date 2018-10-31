@@ -1,4 +1,5 @@
 #!/bin/bash
 set -eu
-pip3 install -r requirements.txt
-pip3 install .
+pip3 install --user .
+# to override pyorgmode
+pip3 install --user -r requirements.txt

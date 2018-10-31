@@ -145,3 +145,27 @@ def test_table_xpath():
 
     assert isinstance(tentry, OrgTable)
 
+def test_logbook():
+    org = Org.from_string("""
+* TODO [#C] this broke my parser
+  :LOGBOOK:
+  CLOCK: [2018-01-24 Wed 19:20]--[2018-01-24 Wed 21:00] =>  1:40
+  :END:
+some content...
+
+* START [#C] or did that broke??
+SCHEDULED: <2018-11-08 Thu>
+:PROPERTIES:
+:CREATED:  [2018-02-04 Sun 20:37]
+:END:
+:LOGBOOK:
+CLOCK: [2018-05-01 Tue 20:00]--[2018-05-01 Tue 20:59] =>  0:59
+:END:
+
+waat
+    """)
+
+    res = org.xpath_all("//org")
+
+    for r in res:
+        r.heading

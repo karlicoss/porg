@@ -263,11 +263,13 @@ class Org(Base):
                 # assert len(elems) == 0
                 cont.append(c)
             elif isinstance(c, Properties):
-                assert props is None
-                props = c
+                if c.name == 'PROPERTIES':
+                    assert props is None
+                # TODO add logbook to tests
+                    props = c
             elif isinstance(c, Table):
                 cont.append(c)
-            elif not isinstance(c, (Scheduled,)):
+            elif not isinstance(c, (Scheduled,)): # TODO assert instance of OrgNode ekement...? # TODO for now just ignore drawer element
                 elems.append(c)
         return (cont, elems, props)
 
