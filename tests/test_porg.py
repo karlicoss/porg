@@ -58,7 +58,7 @@ ORG = """
     maybe I need to replace non-tag colon sequences manually before passing to pyorgmode?
     ugh. so the issue is actually with missing '0' before 8 on kindle
 
-* Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM"
+* Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM" :kindle:whaat:
 
 * xpath_target
  some text...
@@ -169,3 +169,10 @@ waat
 
     for r in res:
         r.heading
+
+def test_tags():
+    org = Org.from_string(ORG)
+
+    res = org.with_tag('kindle')
+
+    assert len(res) == 1

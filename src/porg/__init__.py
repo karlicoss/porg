@@ -376,7 +376,15 @@ class Org(Base):
         ce = ET.SubElement(ee, 'children')
         child_xmls = [c.as_xml() for c in self.children]
         ce.extend(child_xmls)
+
+        te = ET.SubElement(ee, 'tags')
+        for t in self.tags:
+            e = ET.SubElement(te, 'tag')
+            e.text = t
         return ee
+
+    def with_tag(self, tag: str) -> List['Org']:
+        return self.xpath_all(f"//org[./tags/tag[text()='{tag}']]")
 
     def xpath(self, q: str) -> List['Org']:
         [res] = self.xpath_all(q)
@@ -384,6 +392,7 @@ class Org(Base):
 
     def xpath_all(self, q: str):
         xml = self.as_xml()
+        # print(ET.tostring(xml, pretty_print=True))
         xelems = xml.xpath(q)
         return [self._by_xpath_helper(x.attrib['xpath_helper']) for x in xelems]
 
