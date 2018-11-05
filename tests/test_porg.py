@@ -59,6 +59,7 @@ ORG = """
     ugh. so the issue is actually with missing '0' before 8 on kindle
 
 * Your Highlight on page 153 | Location 2342-2343 | Added on Thursday, October 19, 2017 1126 AM" :kindle:whaat:
+** xxxx child node
 
 * xpath_target
  some text...
@@ -173,6 +174,9 @@ waat
 def test_tags():
     org = Org.from_string(ORG)
 
-    res = org.with_tag('kindle')
-
+    res = org.with_tag('kindle', with_inherited=False)
     assert len(res) == 1
+
+    res = org.with_tag('kindle', with_inherited=True)
+    assert len(res) == 2
+

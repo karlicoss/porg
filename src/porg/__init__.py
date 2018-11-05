@@ -208,7 +208,11 @@ class Org(Base):
 
     @property
     def tags(self) -> Set[str]:
-        return set(sorted(self.node.get_all_tags()))
+        return set(self.node.get_all_tags(use_tag_inheritance=True))
+
+    @property
+    def self_tags(self) -> Set[str]:
+        return set(self.node.get_all_tags(use_tag_inheritance=[]))
 
     @property
     def _preheading(self):
@@ -377,14 +381,20 @@ class Org(Base):
         child_xmls = [c.as_xml() for c in self.children]
         ce.extend(child_xmls)
 
+        self_tags = self.self_tags # TODO FIXME give a better name..
         te = ET.SubElement(ee, 'tags')
         for t in self.tags:
             e = ET.SubElement(te, 'tag')
+            e.set('inherited', 'false' if t in self_tags else 'true')
             e.text = t
         return ee
 
-    def with_tag(self, tag: str) -> List['Org']:
-        return self.xpath_all(f"//org[./tags/tag[text()='{tag}']]")
+    def with_tag(self, tag: str, with_inherited=True) -> List['Org']:
+        if with_inherited:
+            tquery = ''
+        else:
+            tquery = f"and @inherited='false'"
+        return self.xpath_all(f"//org[./tags/tag[text()='{tag}' {tquery}]]")
 
     def xpath(self, q: str) -> List['Org']:
         [res] = self.xpath_all(q)
@@ -392,7 +402,7 @@ class Org(Base):
 
     def xpath_all(self, q: str):
         xml = self.as_xml()
-        # print(ET.tostring(xml, pretty_print=True))
+        # print(ET.tostring(xml, pretty_print=True).decode('utf8'))
         xelems = xml.xpath(q)
         return [self._by_xpath_helper(x.attrib['xpath_helper']) for x in xelems]
 
