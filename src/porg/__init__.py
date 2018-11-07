@@ -377,9 +377,8 @@ class Org(Base):
                 raise RuntimeError(f'Unexpected type {type(c)}')
 
 
-        ce = ET.SubElement(ee, 'children')
         child_xmls = [c.as_xml() for c in self.children]
-        ce.extend(child_xmls)
+        ee.extend(child_xmls)
 
         self_tags = self.self_tags # TODO FIXME give a better name..
         te = ET.SubElement(ee, 'tags')
