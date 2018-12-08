@@ -186,3 +186,14 @@ def test_tags():
     res = org.with_tag('kindle', with_inherited=True)
     assert len(res) == 2
 
+def test_raw_contents():
+    org = Org.from_string("""
+* [2018-12-02 Sun 13:00] alala :wlog:
+uu
+** 7
+hello
+** 6
+** 4""")
+    note = org.children[0]
+    assert note.heading == 'alala'
+    assert note.raw_contents == 'uu\n** 7\nhello\n** 6\n** 4\n'

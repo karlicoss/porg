@@ -320,6 +320,25 @@ class Org(Base):
         return ''.join(res)
 
     @property
+    def raw_contents(self) -> str:
+        res = ""
+        for c in self.node.content:
+            if isinstance(c, str):
+                res += c
+            else:
+                res += c.output()
+        return res
+        #res = []
+        #head = False
+        #for n in self.iterate():
+        #    if not head:
+        #        head = True
+        #    else:
+        #        res.append(n.heading + '\n')
+        #    res.append(n.content)
+        #return ''.join(res)
+
+    @property
     def properties(self) -> Optional[Dict[str, str]]:
         Property = PyOrgMode.OrgDrawer.Property
         pp = self._content_split[2]
