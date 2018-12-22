@@ -34,6 +34,9 @@ def test_basic():
     assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
 
 ORG = """
+somthing on top...
+
+
 * Hello
 ** something
  :PROPERTIES:
@@ -110,13 +113,19 @@ def test_xpath():
     assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
 
 def test_root():
-    org = load_test_file()
+    o = """
+top
+* note1
+* note2
+* note3
+    """
+    org = Org.from_string(o)
 
     root = org.xpath('//root')
     assert root == org
 
-    orgs = org.xpath_all('/root/org')
-    assert len(orgs) > 0
+    orgs = org.xpath_all('//org')
+    assert len(orgs) == 3
 
 
 def test_xpath_helper():
@@ -144,10 +153,26 @@ def test_table():
 
     assert len(list(table.lines)) == 2
 
+def test_single():
+    o = """
+* hello
+"""
+    org = Org.from_string(o)
+
+    entries = org.xpath_all('//org')
+
+    assert len(entries) == 1
 
 def test_table_xpath():
-    org = load_test_file()
+    o = """
+| table | a |
+|-------+---|
+| xxx   | 1 |
+    """
+    org = Org.from_string(o)
 
+    # TODO ugh... it's cause it's conflict between table as a field and table as class name...
+    # ugh. how to make it consistent?..
     tentry = org.xpath("//table")
 
     assert isinstance(tentry, OrgTable)
@@ -197,3 +222,6 @@ hello
     note = org.children[0]
     assert note.heading == 'alala'
     assert note.raw_contents == 'uu\n** 7\nhello\n** 6\n** 4\n'
+
+
+# TODO ugh; it's pretty slow now... I guess I should limit the interesting attributes somehow?...

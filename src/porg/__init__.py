@@ -16,10 +16,10 @@ import logging
 from itertools import groupby
 from typing import List, Set, Optional, Dict, Union
 import re
-from lxml import etree as ET # type: ignore
 
 import warnings
 
+from hiccup import xfind, xfind_all, Hiccup
 import PyOrgMode # type: ignore
 
 
@@ -376,53 +376,49 @@ class Org(Base):
 
     # TODO line numbers
 
-    # TODO choose date format?
-    def as_xml(self) -> ET.Element:
-        ee = ET.Element('root' if self.parent is None else 'org')
-        ee.set('xpath_helper', self._xpath_helper)
-        he = ET.SubElement(ee, 'heading')
-        he.text = self.heading
-        cne = ET.SubElement(ee, 'contents')
-
-        # TODO maybe, strings going one after another should be merged? implement a test for that..
-        for c in self.contents:
-            if isinstance(c, str):
-                elem = ET.SubElement(cne, 'text')
-                elem.text = c
-            elif isinstance(c, OrgTable):
-                telem = ET.SubElement(cne, 'table')
-                telem.set('xpath_helper', c._xpath_helper)
-            else:
-                raise RuntimeError(f'Unexpected type {type(c)}')
-
-
-        child_xmls = [c.as_xml() for c in self.children]
-        ee.extend(child_xmls)
-
-        self_tags = self.self_tags # TODO FIXME give a better name..
-        te = ET.SubElement(ee, 'tags')
-        for t in self.tags:
-            e = ET.SubElement(te, 'tag')
-            e.set('inherited', 'false' if t in self_tags else 'true')
-            e.text = t
-        return ee
-
     def with_tag(self, tag: str, with_inherited=True) -> List['Org']:
         if with_inherited:
-            tquery = ''
+            tt = 'tags'
         else:
-            tquery = f"and @inherited='false'"
-        return self.xpath_all(f"//org[./tags/tag[text()='{tag}' {tquery}]]")
+            tt = 'self_tags'
+
+        return self.xpath_all(f"//org[./{tt}/*[text()='{tag}']]")
 
     def xpath(self, q: str) -> List['Org']:
+        r = self.xpath_all(q)
+        # import ipdb; ipdb.set_trace() 
         [res] = self.xpath_all(q)
         return res
 
     def xpath_all(self, q: str):
-        xml = self.as_xml()
-        # print(ET.tostring(xml, pretty_print=True).decode('utf8'))
-        xelems = xml.xpath(q)
-        return [self._by_xpath_helper(x.attrib['xpath_helper']) for x in xelems]
+        h = Hiccup()
+        h.ignore(Base, 'parent')
+        h.ignore(Org, 'parent')
+        h.ignore(Org, Org._content_split) # TODO figure out by method name??
+        h.ignore(Org, '_content_split')
+        h.ignore(Org, 'node')
+        # for cls in [PyOrgMode.OrgTable.Element, PyOrgMode.OrgSchedule.Element, PyOrgMode.OrgDrawer.Element, PyOrgMode.OrgNode.Element]:
+        #     h.ignore(cls)
+        h.ignore(datetime)
+        h.ignore(date)
+        import types
+        h.ignore(types.GeneratorType)
+        # TODO ok, later will just need to exlude the field complenetly?
+        # TODO rename to norecurse?
+        h.ignore(OrgTable)
+
+        def set_root(x):
+            x.tag = 'root'
+        h.xml_hook = set_root
+
+        h.type_name_map.maps[Org] = 'org'
+        h.type_name_map.maps[OrgTable] = 'table'
+        # h.primitive_factory.converters[datetime] = lambda x: x.strftime('%Y%m%d%H:%M:%S')
+
+        # TODO ignore classes complenely
+        # h.ignore(Base, 'parent')
+        hh = h._as_xml(self)
+        return h.xfind_all(self, q)
 
 
 __all__ = ['Org', 'OrgTable', 'parse_org_date']
