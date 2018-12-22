@@ -128,20 +128,6 @@ top
     assert len(orgs) == 3
 
 
-def test_xpath_helper():
-    o = Org.from_string(ORG)
-    assert o._xpath_helper == ''
-
-    ch1 = o.children[1]
-    assert ch1._xpath_helper == 'child|1'
-
-
-    xx = o.xpath("//org[contains(heading, 'xpath_target')]")
-    tbl = xx.contents[1]
-    assert isinstance(tbl, OrgTable)
-
-    assert tbl._xpath_helper == 'child|7,content|1'
-
 def test_table():
     org = load_test_file()
 

@@ -58,42 +58,6 @@ def is_crazy_date(d: Dateish) -> bool:
     YEAR = datetime.now().year
     return not (YEAR - 100 <= d.year <= YEAR + 5)
 
-"""
-actually it's more like an iterator over tree right?
-
-TODO hmm. maybe that was an overkill and I could have just mapped full xpath expression back..
-"""
-class Cid:
-    def __init__(self, where: str, cid: int) -> None:
-        self.where = where
-        self.cid = cid
-
-    @staticmethod
-    def child(cid: int):
-        return Cid('child', cid)
-
-    @staticmethod
-    def content(cid: int):
-        return Cid('content', cid)
-
-    def serialise(self):
-        return f'{self.where}|{self.cid}'
-
-    @staticmethod
-    def deserialise(cs):
-        [where, cid] = cs.split('|')
-        return Cid(where, int(cid))
-
-    def locate(self, orgnote):
-        if self.where == 'child':
-            return orgnote.children[self.cid]
-        elif self.where == 'content':
-            return orgnote.contents[self.cid]
-        else:
-            raise RuntimeError(self.where)
-
-    def __repr__(self):
-        return 'Cid{' + self.where + ',' + str(self.cid) + '}'
 
 _HACK_RE = re.compile(r'\s(?P<time>\d{3}) (AM|PM)($|\s)')
 
@@ -138,27 +102,12 @@ def _parse_org_table(table) -> List[Dict[str, str]]:
 
 # TODO err.. needs a better name
 class Base:
-    def __init__(self, cid, parent):
+    def __init__(self, parent):
         self.parent = parent
-        self.cid = cid
-
-    # TODO cache it as well..?
-    @property
-    def _path(self) -> List[Cid]:
-        if self.cid is None:
-            return []
-        else:
-            prev = [] if self.parent == None else self.parent._path
-            prev.append(self.cid)
-            return prev
-
-    @property
-    def _xpath_helper(self) -> str:
-        return ','.join(map(lambda c: c.serialise(), self._path))
 
 class OrgTable(Base):
-    def __init__(self, root, cid, parent):
-        super().__init__(cid=cid, parent=parent)
+    def __init__(self, root,  parent):
+        super().__init__(parent=parent)
         self.table = _parse_org_table(root)
 
     @property
@@ -178,33 +127,21 @@ class OrgTable(Base):
         return "OrgTable{" + repr(self.table) + "}"
 
 class Org(Base):
-    def __init__(self, root, cid, parent):
-        super().__init__(cid=cid, parent=parent)
+    def __init__(self, root, parent):
+        super().__init__(parent=parent)
         self.node = root
 
     @staticmethod
     def from_file(fname: str):
         base = PyOrgMode.OrgDataStructure()
         base.load_from_file(fname)
-        return Org(base.root, cid=None, parent=None)
+        return Org(base.root, parent=None)
 
     @staticmethod
     def from_string(s: str):
         base = PyOrgMode.OrgDataStructure()
         base.load_from_string(s)
-        return Org(base.root, cid=None, parent=None)
-
-    def _by_xpath_helper(self, helper: str) -> 'Org':
-        helpers: List[str]
-        if helper == '':
-            helpers = []
-        else:
-            helpers = helper.split(',')
-        cur = self
-        for cidstr in helpers:
-            cid = Cid.deserialise(cidstr)
-            cur = cid.locate(cur)
-        return cur
+        return Org(base.root, parent=None)
 
     @property
     def tags(self) -> Set[str]:
@@ -292,11 +229,11 @@ class Org(Base):
                 conts.extend(g)
 
         res = []
-        for cid, c in enumerate(conts):
+        for c in conts:
             if isinstance(c, str):
                 res.append(c)
             elif isinstance(c, Table):
-                res.append(OrgTable(c, cid=Cid.content(cid), parent=self))
+                res.append(OrgTable(c, parent=self))
             else:
                 raise RuntimeError(f"Unexpected type {type(c)}")
         return res
@@ -356,7 +293,7 @@ class Org(Base):
     @property
     def children(self) -> List['Org']:
         # TODO scheduled/deadline things -- handled separately
-        return [Org(c, Cid.child(cid), parent=self) for cid, c in enumerate(self._content_split[1])]
+        return [Org(c, parent=self) for c in self._content_split[1]]
 
     @property
     def level(self):
@@ -386,7 +323,6 @@ class Org(Base):
 
     def xpath(self, q: str) -> List['Org']:
         r = self.xpath_all(q)
-        # import ipdb; ipdb.set_trace() 
         [res] = self.xpath_all(q)
         return res
 
