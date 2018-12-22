@@ -321,12 +321,15 @@ class Org(Base):
 
         return self.xpath_all(f"//org[./{tt}/*[text()='{tag}']]")
 
-    def xpath(self, q: str) -> List['Org']:
+    def xpath(self, q: str):
         r = self.xpath_all(q)
         [res] = self.xpath_all(q)
         return res
 
-    def xpath_all(self, q: str):
+    def firstlevel(self) -> List['Org']:
+        return self.xpath_all('/root/children/org')
+
+    def xpath_all(self, q: str) -> List['Org']:
         h = Hiccup()
         h.ignore(Base, 'parent')
         h.ignore(Org, 'parent')

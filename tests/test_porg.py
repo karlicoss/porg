@@ -127,6 +127,10 @@ top
     orgs = org.xpath_all('//org')
     assert len(orgs) == 3
 
+    # TODO ugh. need to do something like that?...
+    rc = org.firstlevel()
+    assert len(rc) == 3
+
 
 def test_table():
     org = load_test_file()
