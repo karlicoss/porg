@@ -20,6 +20,7 @@ import re
 import warnings
 
 from hiccup import xfind, xfind_all, Hiccup
+from hiccup import IfParentType as IfPType, IfType, IfName
 import PyOrgMode # type: ignore
 
 
@@ -330,21 +331,29 @@ class Org(Base):
         return self.xpath_all('/root/children/org')
 
     def xpath_all(self, q: str) -> List['Org']:
-        h = Hiccup()
-        h.ignore(Base, 'parent')
-        h.ignore(Org, 'parent')
-        h.ignore(Org, Org._content_split) # TODO figure out by method name??
-        h.ignore(Org, '_content_split')
-        h.ignore(Org, 'node')
-        # for cls in [PyOrgMode.OrgTable.Element, PyOrgMode.OrgSchedule.Element, PyOrgMode.OrgDrawer.Element, PyOrgMode.OrgNode.Element]:
-        #     h.ignore(cls)
-        h.ignore(datetime)
-        h.ignore(date)
         import types
-        h.ignore(types.GeneratorType)
-        # TODO ok, later will just need to exlude the field complenetly?
-        # TODO rename to norecurse?
-        h.ignore(OrgTable)
+
+        h = Hiccup()
+        for cls in (datetime, date, OrgTable):
+            h.exclude(IfPType(cls))
+
+        # TODO ignore by default?..
+        h.exclude(IfType(types.GeneratorType))
+        h.exclude(IfPType(Base), IfName('parent'))
+
+        for att in [
+                'parent',
+                '_content_split',
+        ]:
+            h.exclude(IfPType(Org), IfName(att))
+
+        for cls in [
+                PyOrgMode.OrgTable.Element,
+                PyOrgMode.OrgSchedule.Element,
+                PyOrgMode.OrgDrawer.Element,
+                PyOrgMode.OrgNode.Element,
+        ]:
+            h.exclude(IfType(cls))
 
         def set_root(x):
             x.tag = 'root'
@@ -354,9 +363,7 @@ class Org(Base):
         h.type_name_map.maps[OrgTable] = 'table'
         # h.primitive_factory.converters[datetime] = lambda x: x.strftime('%Y%m%d%H:%M:%S')
 
-        # TODO ignore classes complenely
-        # h.ignore(Base, 'parent')
-        hh = h._as_xml(self)
+        hh = h.as_xml(self)
         return h.xfind_all(self, q)
 
 

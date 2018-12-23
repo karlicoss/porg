@@ -16,4 +16,4 @@
 # scipy==1.0
 
 -e git+git://github.com/bjonnh/PyOrgMode@cfd430afea3b1baad650c8bd0330474907b73f89#egg=PyOrgMode-0.1
-hiccup
+hiccup>=0.3
