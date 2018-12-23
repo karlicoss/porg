@@ -28,7 +28,7 @@ def get_logger():
     return logging.getLogger('porg')
 
 def extract_org_datestr(s: str) -> Optional[str]:
-    match = re.search(r'\[\d{4}-\d{2}-\d{2}.*]', s)
+    match = re.search(r'\[\d{4}-\d{2}-\d{2}.*?\]', s)
     if not match:
         return None
     else:

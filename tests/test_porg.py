@@ -215,3 +215,12 @@ hello
 
 
 # TODO ugh; it's pretty slow now... I guess I should limit the interesting attributes somehow?...
+
+
+def test_bad_date():
+    org = Org.from_string("""
+* [#B] [2018-08-21 Tue 22:35] uu [1234 01234567] :hello:
+""")
+    res = org.with_tag('hello')
+    assert len(res) == 1
+
