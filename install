@@ -1,5 +1,11 @@
 #!/bin/bash
 set -eu
+
+# TODO ugh crap. or maybe 
+python3 setup.py install --user -f  
+# ???
+# TODO wtf?? still had to remove porg from site-packages. ugh!
+
 pip3 install --user .
 # to override pyorgmode
 pip3 install --user -r requirements.txt
