@@ -363,7 +363,6 @@ class Org(Base):
         h.type_name_map.maps[OrgTable] = 'table'
         # h.primitive_factory.converters[datetime] = lambda x: x.strftime('%Y%m%d%H:%M:%S')
 
-        hh = h.as_xml(self)
         return h.xfind_all(self, q)
 
 
