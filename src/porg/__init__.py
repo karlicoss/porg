@@ -37,7 +37,7 @@ def extract_org_datestr(s: str) -> Optional[str]:
 Dateish = Union[datetime, date]
 
 def parse_org_date(s: str) -> Dateish:
-    s = s.strip('[]').strip() # just in case
+    s = s.strip().strip('[]').strip() # just in case
     for fmt, cl in [
             ("%Y-%m-%d %a %H:%M", datetime),
             ("%Y-%m-%d %H:%M", datetime),
