@@ -26,5 +26,6 @@ if __name__ == "__main__":
         dependency_links=[
             # ugh. tests are broken in master... https://github.com/bjonnh/PyOrgMode/issues/47
             'https://github.com/bjonnh/PyOrgMode/archive/cfd430afea3b1baad650c8bd0330474907b73f89.zip#egg=PyOrgMode-0.1',
+            'https://github.com/karlicoss/hiccup/archive/v0.3.zip#egg=hiccup-0.3',
         ],
     )
