@@ -1,0 +1,10 @@
+#+FILETAGS: porg
+
+Python module for using Org-mode files as data provider and for queries.
+
+* TODOs
+*** TODO [#B] line number backreferences into org files? 
+:PROPERTIES:
+:CREATED: [2018-10-12 Fri 16:40]
+:END:
+
