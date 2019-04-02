@@ -206,7 +206,7 @@ class Org(Base):
                 cont.append(c)
             elif isinstance(c, Properties):
                 if c.name == 'PROPERTIES':
-                    assert props is None
+                    assert props is None, str(self)
                 # TODO add logbook to tests
                     props = c
             elif isinstance(c, Table):
@@ -245,6 +245,7 @@ class Org(Base):
         return ''.join(c if isinstance(c, str) else str(c) for c in conts)
 
     # TODO better name?...
+    # TODO shit. test carefully for items/subitems and make sure it handles whitespace properly...
     @property
     def content_recursive(self) -> str:
         res = []
