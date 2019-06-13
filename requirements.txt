@@ -15,5 +15,5 @@
 # numpy==1.13.3
 # scipy==1.0
 
-# -e git+git://github.com/karlicoss/hiccup@master#egg=hiccup-0.3
+-e git+git://github.com/karlicoss/hiccup@master#egg=hiccup-0.4
 -e git+git://github.com/bjonnh/PyOrgMode@cfd430afea3b1baad650c8bd0330474907b73f89#egg=PyOrgMode-0.1

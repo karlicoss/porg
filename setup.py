@@ -27,6 +27,6 @@ if __name__ == "__main__":
             # ugh. tests are broken in master... https://github.com/bjonnh/PyOrgMode/issues/47
             # TODO what's the egg thing for???
             'https://github.com/bjonnh/PyOrgMode/archive/cfd430afea3b1baad650c8bd0330474907b73f89.zip#egg=PyOrgMode-0.1',
-            'git+https://github.com/karlicoss/hiccup.git#egg=hiccup-0.3',
+            'git+https://github.com/karlicoss/hiccup.git#egg=hiccup-0.4',
         ],
     )
