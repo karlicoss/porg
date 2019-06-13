@@ -24,6 +24,7 @@ def load_test_file():
     # TODO import this file in project
     fname = "/L/repos/PyOrgMode/PyOrgMode/test.org"
     return Org.from_file(fname)
+    # TODO need to touch every date and note
 
 
 def test_basic():

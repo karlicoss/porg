@@ -14,7 +14,7 @@ finally:
 from datetime import datetime, date
 import logging
 from itertools import groupby
-from typing import List, Set, Optional, Dict, Union
+from typing import List, Set, Optional, Dict, Union, NoReturn
 import re
 
 import warnings
@@ -182,12 +182,21 @@ class Org(Base):
 
         return None
 
-    @property
-    def created(self) -> Optional[Dateish]:
+    def _created_impl(self) -> Optional[Dateish]:
         cs = self._created_str
         if cs is not None:
             return parse_org_date(cs)
         return extract_date_fuzzy(self.heading)
+
+    def _throw(self, e: Exception) -> NoReturn:
+        raise RuntimeError(f'Processing {self.node.heading} failed') from e
+
+    @property
+    def created(self) -> Optional[Dateish]:
+        try:
+            return self._created_impl()
+        except Exception as e:
+            self._throw(e)
 
     @property
     def _content_split(self):
