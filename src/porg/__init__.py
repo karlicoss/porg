@@ -36,6 +36,7 @@ def extract_org_datestr(s: str) -> Optional[str]:
 
 Dateish = Union[datetime, date]
 
+# TODO allow specifying custom date formats
 def parse_org_date(s: str) -> Dateish:
     s = s.strip().strip('[]').strip() # just in case
     for fmt, cl in [
@@ -54,41 +55,6 @@ def parse_org_date(s: str) -> Dateish:
             continue
     else:
         raise RuntimeError(f"Bad date string {str(s)}")
-
-def is_crazy_date(d: Dateish) -> bool:
-    YEAR = datetime.now().year
-    return not (YEAR - 100 <= d.year <= YEAR + 5)
-
-
-_HACK_RE = re.compile(r'\s(?P<time>\d{3}) (AM|PM)($|\s)')
-
-def extract_date_fuzzy(s: str) -> Optional[Dateish]:
-    # TODO wonder how slow it is..
-    logger = get_logger()
-    try:
-        import datefinder # type: ignore
-    except ImportError as e:
-        warnings.warn("Install datefinder for fuzzy date extraction!")
-        return None
-
-    # try to hack AM/PM dates without leading zero
-    mm = _HACK_RE.search(s)
-    if mm is not None:
-        start = mm.span()[0] + 1
-        tgroup = mm.group('time')
-        s = s[:start] + '0' + s[start:]
-
-    # could remove this after I fix the org mode tag issuell..
-
-
-    dates = list(datefinder.find_dates(s))
-    dates = [d for d in dates if not is_crazy_date(d)]
-
-    if len(dates) == 0:
-        return None
-    if len(dates) > 1:
-        logger.warning("Multiple dates extracted from %s. Choosing first.", s)
-    return dates[0]
 
 def _parse_org_table(table) -> List[Dict[str, str]]:
     # TODO with_header?
@@ -186,7 +152,7 @@ class Org(Base):
         cs = self._created_str
         if cs is not None:
             return parse_org_date(cs)
-        return extract_date_fuzzy(self.heading)
+        return None
 
     def _throw(self, e: Exception) -> NoReturn:
         raise RuntimeError(f'Processing {self.node.heading} failed') from e
@@ -206,7 +172,7 @@ class Org(Base):
 
         cc = self.node.content
         cont = []
-        elems = []
+        elems: List = []
         props = None
         for i, c in enumerate(cc):
             if isinstance(c, str):
