@@ -137,6 +137,9 @@ def test_root():
 #+FILETAGS: whatever
 
 top""".lstrip()
+    assert len(org.children) == 3
+    assert [c.heading for c in org.children] == ['note1', 'note2', 'note3']
+    assert org.level == 0
 
 
 def test_root_xpath():

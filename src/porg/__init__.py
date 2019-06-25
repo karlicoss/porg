@@ -262,7 +262,6 @@ class Org(Base):
 
     @property
     def children(self) -> List['Org']:
-        # TODO FIXME careful with root?
         return [Org(c, parent=self) for c in self.node.children]
 
     @property
