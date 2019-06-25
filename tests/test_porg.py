@@ -265,3 +265,24 @@ def test_1111():
     """)
     for x in org.iterate():
         assert x.created is None
+
+
+# TODO move that to orgparse?
+def test_empty_heading():
+    org = Org.from_string("""
+* [2019-05-26 Sun 09:11]                                            :hello:
+
+abacaba
+
+** TODO database
+ :PROPERTIES:
+ :CREATED:  [2019-05-26 Sun 09:15]
+ :END:
+""")
+    c = org.children[0]
+    assert c.heading == ''
+    assert c.tags == {'hello'}
+
+    cc = c.children[0]
+    assert cc.heading == 'database'
+
