@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+        # TODO ok, so contents returns mix or str and tables? why not..
 from pkg_resources import get_distribution, DistributionNotFound
 
 try:
@@ -57,14 +58,27 @@ def parse_org_date(s: str) -> Dateish:
     else:
         raise RuntimeError(f"Bad date string {str(s)}")
 
-def _parse_org_table(table) -> List[Dict[str, str]]:
-    # TODO with_header?
-    cols = [s.strip() for s in table.content[0]]
-    idx = dict(enumerate(cols))
+def _is_separator(ll: List[str]):
+    return all(all(c == '-' for c in s) for s in ll)
+
+def _parse_org_table(lines: List[List[str]]) -> List[Dict[str, str]]:
+    before_first_sep: List[List[str]] = []
+    after_first_sep: List[List[str]] = []
+    cur = before_first_sep
+    for ll in lines:
+        if _is_separator(ll):
+            cur = after_first_sep
+            continue
+        cur.append(ll)
+
+    # TODO FIXME not sure how should the column names be treated if there are multiple lines before first separator...
+    cols = before_first_sep[-1] # TODO FIXME is a table required to have column names at all?
+    idx = [c.strip() for c in cols]
     res = []
-    for row in table.content[2:]:
-        d = {}
-        for i, val in enumerate(row): d[idx[i]] = val.strip()
+    for row in after_first_sep:
+        d: Dict[str, str] = {}
+        for i, val in enumerate(row):
+            d[idx[i]] = val.strip()
         res.append(d)
     return res
 
@@ -74,9 +88,9 @@ class Base:
         self.parent = parent
 
 class OrgTable(Base):
-    def __init__(self, root,  parent):
+    def __init__(self, lines: List[List[str]],  parent):
         super().__init__(parent=parent)
-        self.table = _parse_org_table(root)
+        self.table = _parse_org_table(lines)
 
     @property
     def columns(self) -> List[str]:
@@ -135,6 +149,7 @@ class Org(Base):
 
     @property
     def _preheading(self):
+        # TODO not sure if this is necessary now?
         hh = self.node.heading
         ds = extract_org_datestr(hh)
         if ds is not None:
@@ -147,6 +162,7 @@ class Org(Base):
 
     @property
     def heading(self) -> str:
+        # TODO reuse orgparse?
         return self._preheading[0].strip()
 
     # TODO cache..
@@ -179,114 +195,66 @@ class Org(Base):
         except Exception as e:
             self._throw(e)
 
-    # @property
-    # def _content_split(self):
-    #     import ipdb; ipdb.set_trace() 
-    #     Table = PyOrgMode.OrgTable.Element
-    #     Scheduled = PyOrgMode.OrgSchedule.Element
-    #     Properties = PyOrgMode.OrgDrawer.Element
-
-    #     cc = self.node.content
-    #     cont = []
-    #     elems: List = []
-    #     props = None
-    #     for i, c in enumerate(cc):
-    #         if isinstance(c, str):
-    #             # NOTE ok, various unparsed properties can be str... so we just concatenate them
-    #             # assert len(elems) == 0
-    #             cont.append(c)
-    #         elif isinstance(c, Properties):
-    #             if c.name == 'PROPERTIES':
-    #                 assert props is None, str(self)
-    #             # TODO add logbook to tests
-    #                 props = c
-    #         elif isinstance(c, Table):
-    #             cont.append(c)
-    #         elif not isinstance(c, (Scheduled,)): # TODO assert instance of OrgNode ekement...? # TODO for now just ignore drawer element
-    #             elems.append(c)
-    #     return (cont, elems, props)
-
     @property
-    def contents(self):
-        Table = PyOrgMode.OrgTable.Element
+    def contents(self) -> List[Union[str, OrgTable]]:
+        TABLE_ROW = r'\s*\|(?P<cells>(.+\|)+)s*$'
+        if self.node.is_root():
+            lines = self.node._lines
+        else:
+            lines = self.node._body_lines
 
-        raw_conts = self._content_split[0]
-
-
-        conts = []
-        for t, g in groupby(raw_conts, key=lambda c: type(c)):
-            if t == type(''): # meh
-                conts.append(''.join(g))
+        items = []
+        for line in lines:
+            m = re.match(TABLE_ROW, line)
+            if m is not None:
+                cells = [c for c in re.split(r'[|+]', m.group('cells')) if c != ''] # TODO what do we do with separator??
+                items.append(cells)
             else:
-                conts.extend(g)
+                items.append(line)
 
-        res = []
-        for c in conts:
-            if isinstance(c, str):
-                res.append(c)
-            elif isinstance(c, Table):
-                res.append(OrgTable(c, parent=self))
-            else:
-                raise RuntimeError(f"Unexpected type {type(c)}")
+        res: List[Union[str, OrgTable]] = []
+        for t, g in groupby(items, key=lambda c: type(c)):
+            if t == type(''): # meh:
+                res.extend(g) # type: ignore
+            else: # should be table cells?
+                cells = list(g)
+                res.append(OrgTable(cells, parent=self))
         return res
 
+    # TODO what's that used for??
     @property
     def content(self) -> str:
+        # TODO not sure, reuse orgparse functions? or we don't want tables?
         conts = self.contents
         return ''.join(c if isinstance(c, str) else str(c) for c in conts)
 
-    # TODO better name?...
-    # TODO shit. test carefully for items/subitems and make sure it handles whitespace properly...
     @property
     def content_recursive(self) -> str:
-        res = []
-        head = False
-        for n in self.iterate():
-            if not head:
-                head = True
-            else:
-                res.append(n.heading)
-            res.append(n.content)
-        return ''.join(res)
+        warnings.warn('Please use get_raw instead', DeprecationWarning)
+        return self.get_raw(heading=False, recursive=True)
 
-    @property
-    def raw_contents(self) -> str:
-        res = ""
-        for c in self.node.content:
-            if isinstance(c, str):
-                res += c
-            else:
-                res += c.output()
-        return res
-        #res = []
-        #head = False
-        #for n in self.iterate():
-        #    if not head:
-        #        head = True
-        #    else:
-        #        res.append(n.heading + '\n')
-        #    res.append(n.content)
-        #return ''.join(res)
+    def _get_raw(self, heading: bool, recursive: bool) -> List[str]:
+        lines: List[str] = []
+        # TODO FIXME careful with root
+        lines.extend(self.node._lines if heading else self.node._body_lines)
+        if recursive:
+            for c in self.children:
+                lines.extend(c._get_raw(heading=True, recursive=True))
+        return lines
+
+    # TODO FIXME hmm orparse extracts some of the timestamps...
+    def get_raw(self, heading=False, recursive=False) -> str:
+        return '\n'.join(self._get_raw(heading=heading, recursive=recursive))
 
     @property
     def properties(self) -> Optional[Dict[str, str]]:
         return self.node.properties # TODO not sure about types..
-        # Property = PyOrgMode.OrgDrawer.Property
-        # pp = self._content_split[2]
-        # if pp is None:
-        #     return None
-        # props = {} # TODO ordered??
-        # for p in pp.content:
-        #     if not isinstance(p, Property):
-        #         # TODO can it actually happen?..
-        #         warnings.warn("{} is not instance of Property".format(p))
-        #         continue
-        #     props[p.name] = p.value
-        # return props
 
     @property
     def children(self) -> List['Org']:
-        # TODO scheduled/deadline things -- handled separately
+        # if self.node.is_root():
+        #     import ipdb; ipdb.set_trace() 
+        #     raise RuntimeError
         return [Org(c, parent=self) for c in self.node.children]
 
     @property

@@ -139,6 +139,7 @@ def test_table():
     org = load_test_file()
 
     tparent = org.xpath("//org[contains(heading, 'Table test')]")
+    print(tparent.contents)
     [table] = tparent.contents
     assert table.columns == ['elsbl', 'lesél', 'lseilép']
 
@@ -157,12 +158,16 @@ def test_single():
     assert len(entries) == 1
 
 def test_table_xpath():
-    o = """
+    o  = """
 | table | a |
 |-------+---|
 | xxx   | 1 |
     """
     org = Org.from_string(o)
+
+    contents = org.contents
+    assert len(contents) == 3 # TODO careful about empty line handling..
+    assert isinstance(contents[1], OrgTable)
 
     # TODO ugh... it's cause it's conflict between table as a field and table as class name...
     # ugh. how to make it consistent?..
@@ -204,7 +209,7 @@ def test_tags():
     res = org.with_tag('kindle', with_inherited=True)
     assert len(res) == 2
 
-def test_raw_contents():
+def test_raw():
     org = Org.from_string("""
 * [2018-12-02 Sun 13:00] alala :wlog:
 uu
@@ -214,7 +219,13 @@ hello
 ** 4""")
     note = org.children[0]
     assert note.heading == 'alala'
-    assert note.raw_contents == 'uu\n** 7\nhello\n** 6\n** 4\n'
+    assert note.get_raw(heading=False, recursive=True) == '''
+uu
+** 7
+hello
+** 6
+** 4
+'''.strip()
     assert note.created == datetime(year=2018, month=12, day=2, hour=13, minute=0)
 
 
