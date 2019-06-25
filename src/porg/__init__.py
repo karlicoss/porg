@@ -125,7 +125,7 @@ class Org(Base):
     @property
     def _root(self) -> 'Org': # TODO cache?
         x = self
-        while x.parent is not None:
+        while not x.is_root():
             x = x.parent
         return x
 
@@ -205,7 +205,7 @@ class Org(Base):
     @property
     def contents(self) -> List[Union[str, OrgTable]]:
         TABLE_ROW = r'\s*\|(?P<cells>(.+\|)+)s*$'
-        if self.node.is_root():
+        if self.is_root():
             lines = self.node._lines
         else:
             lines = self.node._body_lines
@@ -259,9 +259,7 @@ class Org(Base):
 
     @property
     def children(self) -> List['Org']:
-        # if self.node.is_root():
-        #     import ipdb; ipdb.set_trace() 
-        #     raise RuntimeError
+        # TODO FIXME careful with root?
         return [Org(c, parent=self) for c in self.node.children]
 
     @property
