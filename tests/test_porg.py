@@ -86,6 +86,7 @@ def test_dates():
     org = Org.from_string(ORG)
 
     cc = find(org, 'something')
+    assert cc.properties == {'CREATED': '[2018-10-23 Tue 20:55]'}
     assert cc.created == datetime(year=2018, month=10, day=23, hour=20, minute=55)
 
     cc2 = find(org, 'etc')
@@ -125,6 +126,7 @@ def test_root():
     assert org.heading == ''
     assert org.tags == {'whatever', 'tag2'}
     assert org.self_tags == {'whatever', 'tag2'}
+    assert org.file_settings == {'FILETAGS': [':whatever:tag2:']}
 
     # TODO not so sure about including filetags...
     # TODO what semantics does heading have for root node??

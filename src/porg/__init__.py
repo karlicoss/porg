@@ -15,7 +15,7 @@ finally:
 from datetime import datetime, date
 import logging
 from itertools import groupby
-from typing import List, Set, Optional, Dict, Union, NoReturn
+from typing import List, Set, Optional, Dict, Union, NoReturn, Tuple
 from pathlib import Path
 import re
 import warnings
@@ -134,9 +134,12 @@ class Org(Base):
         return x
 
     @property
+    def file_settings(self) -> Dict[str, List[str]]:
+        return self._root.node._special_comments
+
+    @property
     def _filetags(self) -> Set[str]: # TODO maybe, deserves to be non private?
-        root = self._root
-        ftags = root.node._special_comments.get('FILETAGS', [])
+        ftags = self.file_settings.get('FILETAGS', [])
         res: Set[str] = set()
         for ft in ftags:
             res.update(t for t in ft.split(':') if len(t.strip()) != 0)
@@ -246,7 +249,7 @@ class Org(Base):
 
     @property
     def content_recursive(self) -> str:
-        warnings.warn('Please use get_raw instead', DeprecationWarning)
+        warnings.warn('Please use get_raw(recursive=True) instead', DeprecationWarning)
         return self.get_raw(heading=False, recursive=True)
 
     def _get_raw(self, heading: bool, recursive: bool) -> List[str]:
@@ -266,8 +269,12 @@ class Org(Base):
         return '\n'.join(self._get_raw(heading=heading, recursive=recursive))
 
     @property
-    def properties(self) -> Optional[Dict[str, str]]:
-        return self.node.properties # TODO not sure about types..
+    def properties(self) -> Dict[str, str]:
+        if self.is_root():
+            # TODO ugh. would be convenient to have filetags as properties, but they are multivalues which breaks the return type :(
+            return {}
+        else:
+            return self.node.properties
 
     @property
     def children(self) -> List['Org']:
