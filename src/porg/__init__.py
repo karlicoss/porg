@@ -135,7 +135,10 @@ class Org(Base):
     def _filetags(self) -> Set[str]: # TODO maybe, deserves to be non private?
         root = self._root
         ftags = root.node._special_comments.get('FILETAGS', [])
-        return set(ftags)
+        res: Set[str] = set()
+        for ft in ftags:
+            res.update(t for t in ft.split(':') if len(t.strip()) != 0)
+        return res
 
     # TODO not sure if empty tags should be filtered?
     @property
