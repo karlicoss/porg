@@ -1,6 +1,0 @@
-#!/bin/bash
-set -eu
-
-# vvv this is to override pyorgmode and specify hikkup (which is not on pypi)
-pip3 install --user -r requirements.txt
-pip3 install --user .

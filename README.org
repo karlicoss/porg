@@ -8,3 +8,7 @@ Python module for using Org-mode files as data provider and for queries.
 :CREATED: [2018-10-12 Fri 16:40]
 :END:
 
+* Installing: ~pip3 install --user .~
+
+* Developing
+** To upgrade git dependencies (hiccup and orparse), you have to do ~pip3 uninstall~ for them first, otherwise pip can't detect changes.. (see [[https://stackoverflow.com/a/55393849/706389][here]]).
