@@ -32,6 +32,7 @@ def test_basic():
     # TODO scheduling test / clock / properties
     assert 'xxxx' in org.tags
     node = find(org, 'CLOCK')
+    assert isinstance(node, Org)
     assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
 
 ORG = """

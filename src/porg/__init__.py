@@ -16,12 +16,13 @@ import logging
 from itertools import groupby
 from typing import List, Set, Optional, Dict, Union, NoReturn
 import re
-
 import warnings
+
+from pathlib import Path
+import orgparse
 
 from hiccup import xfind, xfind_all, Hiccup
 from hiccup import IfParentType as IfPType, IfType, IfName
-import PyOrgMode # type: ignore
 
 
 def get_logger():
@@ -98,25 +99,39 @@ class Org(Base):
         super().__init__(parent=parent)
         self.node = root
 
-    @staticmethod
-    def from_file(fname: str):
-        base = PyOrgMode.OrgDataStructure()
-        base.load_from_file(fname)
-        return Org(base.root, parent=None)
+    @classmethod
+    def from_file(cls, fname: str):
+        return cls.from_string(Path(fname).read_text())
 
     @staticmethod
     def from_string(s: str):
-        base = PyOrgMode.OrgDataStructure()
-        base.load_from_string(s)
-        return Org(base.root, parent=None)
+        base = orgparse.loads(s)
+        return Org(base, parent=None)
 
     @property
+    def _root(self) -> 'Org': # TODO cache?
+        x = self
+        while x.parent is not None:
+            x = x.parent
+        return x
+
+    @property
+    def _filetags(self) -> Set[str]:
+        root = self._root
+        ftags = root.node._special_comments.get('FILETAGS', [])
+        return set(ftags)
+
+    # TODO not sure if empty tags should be filtered?
+    @property
     def tags(self) -> Set[str]:
-        return set(self.node.get_all_tags(use_tag_inheritance=True))
+        # TODO is_root?
+        # TODO get_heading()?
+        return self._filetags | set(self.node.tags)
 
     @property
     def self_tags(self) -> Set[str]:
-        return set(self.node.get_all_tags(use_tag_inheritance=[]))
+        return set(self.node.shallow_tags)
+        # TODO FIXME hmm if self_tags threw exception, porg didn't seem to care... not sure how we want that to be handled
 
     @property
     def _preheading(self):
@@ -164,31 +179,32 @@ class Org(Base):
         except Exception as e:
             self._throw(e)
 
-    @property
-    def _content_split(self):
-        Table = PyOrgMode.OrgTable.Element
-        Scheduled = PyOrgMode.OrgSchedule.Element
-        Properties = PyOrgMode.OrgDrawer.Element
+    # @property
+    # def _content_split(self):
+    #     import ipdb; ipdb.set_trace() 
+    #     Table = PyOrgMode.OrgTable.Element
+    #     Scheduled = PyOrgMode.OrgSchedule.Element
+    #     Properties = PyOrgMode.OrgDrawer.Element
 
-        cc = self.node.content
-        cont = []
-        elems: List = []
-        props = None
-        for i, c in enumerate(cc):
-            if isinstance(c, str):
-                # NOTE ok, various unparsed properties can be str... so we just concatenate them
-                # assert len(elems) == 0
-                cont.append(c)
-            elif isinstance(c, Properties):
-                if c.name == 'PROPERTIES':
-                    assert props is None, str(self)
-                # TODO add logbook to tests
-                    props = c
-            elif isinstance(c, Table):
-                cont.append(c)
-            elif not isinstance(c, (Scheduled,)): # TODO assert instance of OrgNode ekement...? # TODO for now just ignore drawer element
-                elems.append(c)
-        return (cont, elems, props)
+    #     cc = self.node.content
+    #     cont = []
+    #     elems: List = []
+    #     props = None
+    #     for i, c in enumerate(cc):
+    #         if isinstance(c, str):
+    #             # NOTE ok, various unparsed properties can be str... so we just concatenate them
+    #             # assert len(elems) == 0
+    #             cont.append(c)
+    #         elif isinstance(c, Properties):
+    #             if c.name == 'PROPERTIES':
+    #                 assert props is None, str(self)
+    #             # TODO add logbook to tests
+    #                 props = c
+    #         elif isinstance(c, Table):
+    #             cont.append(c)
+    #         elif not isinstance(c, (Scheduled,)): # TODO assert instance of OrgNode ekement...? # TODO for now just ignore drawer element
+    #             elems.append(c)
+    #     return (cont, elems, props)
 
     @property
     def contents(self):
@@ -254,23 +270,24 @@ class Org(Base):
 
     @property
     def properties(self) -> Optional[Dict[str, str]]:
-        Property = PyOrgMode.OrgDrawer.Property
-        pp = self._content_split[2]
-        if pp is None:
-            return None
-        props = {} # TODO ordered??
-        for p in pp.content:
-            if not isinstance(p, Property):
-                # TODO can it actually happen?..
-                warnings.warn("{} is not instance of Property".format(p))
-                continue
-            props[p.name] = p.value
-        return props
+        return self.node.properties # TODO not sure about types..
+        # Property = PyOrgMode.OrgDrawer.Property
+        # pp = self._content_split[2]
+        # if pp is None:
+        #     return None
+        # props = {} # TODO ordered??
+        # for p in pp.content:
+        #     if not isinstance(p, Property):
+        #         # TODO can it actually happen?..
+        #         warnings.warn("{} is not instance of Property".format(p))
+        #         continue
+        #     props[p.name] = p.value
+        # return props
 
     @property
     def children(self) -> List['Org']:
         # TODO scheduled/deadline things -- handled separately
-        return [Org(c, parent=self) for c in self._content_split[1]]
+        return [Org(c, parent=self) for c in self.node.children]
 
     @property
     def level(self):
@@ -278,7 +295,8 @@ class Org(Base):
 
     # None means infinite
     def iterate(self, depth=None):
-        yield self
+        if not isinstance(self.node, orgparse.node.OrgRootNode):
+            yield self
         if depth == 0:
             return
         for c in self.children:
@@ -320,14 +338,14 @@ class Org(Base):
         for att in [
                 'parent',
                 '_content_split',
+                '_root',
         ]:
             h.exclude(IfPType(Org), IfName(att))
 
         for cls in [
-                PyOrgMode.OrgTable.Element,
-                PyOrgMode.OrgSchedule.Element,
-                PyOrgMode.OrgDrawer.Element,
-                PyOrgMode.OrgNode.Element,
+                orgparse.node.OrgBaseNode,
+                orgparse.node.OrgNode,
+                orgparse.node.OrgRootNode,
         ]:
             h.exclude(IfType(cls))
 
