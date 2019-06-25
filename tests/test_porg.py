@@ -119,6 +119,12 @@ top
 * note3
     """.lstrip()
 
+def test_heading():
+    org = Org.from_string("""
+* [2016-05-14 Sat 15:33] [[https://www.reddit.com/r/androidapps/comments/4i36z9/how_you_use_your_android_to_the_maximum/d2uq24i][sc4s2cg comments on How you use your android to the maximum?]] :android:
+    """)
+
+    assert org.children[0].heading == '[[https://www.reddit.com/r/androidapps/comments/4i36z9/how_you_use_your_android_to_the_maximum/d2uq24i][sc4s2cg comments on How you use your android to the maximum?]]'
 
 def test_root():
     org = Org.from_string(_root_org)

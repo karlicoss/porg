@@ -160,8 +160,9 @@ class Org(Base):
 
     @property
     def _preheading(self):
+        # TODO hmm. format='plain' could be useful as well?? not sure where can I sue it here..
         # TODO orparse got self.node._timestamps, no good way of stripping it off from heading...
-        hh = '' if self.is_root() else self.node.heading
+        hh = '' if self.is_root() else self.node.get_heading(format='raw')
         ds = extract_org_datestr(hh)
         if ds is not None:
             hh = hh.replace(ds, '') # meh, but works?
