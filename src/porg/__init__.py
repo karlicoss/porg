@@ -16,12 +16,14 @@ from datetime import datetime, date
 import logging
 from itertools import groupby
 from typing import List, Set, Optional, Dict, Union, NoReturn
+from pathlib import Path
 import re
 import warnings
 
-from pathlib import Path
-import orgparse
 
+import orgparse # type: ignore
+
+# TODO add py.typed?
 from hiccup import xfind, xfind_all, Hiccup
 from hiccup import IfParentType as IfPType, IfType, IfName
 
@@ -150,7 +152,7 @@ class Org(Base):
 
     @property
     def _preheading(self):
-        # TODO not sure if this is necessary now?
+        # TODO orparse got self.node._timestamps, no good way of stripping it off from heading...
         hh = self.node.heading
         ds = extract_org_datestr(hh)
         if ds is not None:
@@ -163,7 +165,6 @@ class Org(Base):
 
     @property
     def heading(self) -> str:
-        # TODO reuse orgparse?
         return self._preheading[0].strip()
 
     def is_root(self) -> bool:

@@ -92,20 +92,9 @@ def test_dates():
     cc4 = find(org, 'messed-up')
     assert cc4.created is not None
 
-    # TODO perhaps good idea would be allowing to pass custom datetime handler?..
-    # for now just let users handle these...
     cc5 = match(org, 'from-kindle')
-    # TODO FIXME must be issue in org parser (look at cc5.heading)
-    # assert cc5.created.year == 2017
-    # assert cc5.created == datetime(year=2017, month=10, day=31, hour=12, minute=37, second=24)
-
     cc6 = match(org, 'Your Highlight on page 153')
-    # assert cc6.created is not None
-    # assert cc6.created.year == 2017
-
     cc7 = match(org, 'Your Highlight on Location')
-    # will fix later...
-    # assert cc7.created is not None
 
 
 def test_xpath():
