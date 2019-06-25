@@ -240,7 +240,7 @@ class Org(Base):
 
     @property
     def body(self) -> str:
-        return '\n'.join(self.node._lines) if self.is_root() else self.node.body
+        return '\n'.join(self.node._lines) if self.is_root() else self.node.get_body(format='raw')
 
     # TODO not a great function... semantics is pretty confusing
     @property
