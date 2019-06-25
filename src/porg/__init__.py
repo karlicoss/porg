@@ -14,14 +14,17 @@ finally:
 from datetime import datetime, date
 import logging
 from itertools import groupby
-from typing import List, Set, Optional, Dict, Union, NoReturn
+from typing import List, Set, Optional, Dict, Union, NoReturn, Tuple
 import re
+
+from pathlib import Path
 
 import warnings
 
+import pyorg
+
 from hiccup import xfind, xfind_all, Hiccup
 from hiccup import IfParentType as IfPType, IfType, IfName
-import PyOrgMode # type: ignore
 
 
 def get_logger():
@@ -98,20 +101,49 @@ class Org(Base):
         super().__init__(parent=parent)
         self.node = root
 
-    @staticmethod
-    def from_file(fname: str):
-        base = PyOrgMode.OrgDataStructure()
-        base.load_from_file(fname)
-        return Org(base.root, parent=None)
+    @classmethod
+    def from_file(cls, fname: str):
+        text = Path(fname).read_text()
+        # TODO not sure if should keep separate so we'd have locators back in file?
+        return cls.from_string(text)
 
     @staticmethod
     def from_string(s: str):
-        base = PyOrgMode.OrgDataStructure()
-        base.load_from_string(s)
-        return Org(base.root, parent=None)
+        org = pyorg.org.Org(s)
+        # TODO hmm maybe don't need parent anymore?
+        return Org(org, parent=None)
+
+    # TODO if it's a root item, get file properties??
+    # TODO or should all nodes have access to file properties?
+    def _get_file_props(self) -> List[Tuple[str, str]]:
+        def parse_fprop(te) -> Tuple[str, str]:
+            import ipdb; ipdb.set_trace() 
+            assert te.type_ == 'Text'
+            [v] = te.values
+            import re
+            m = re.match(r'#\+(?P<key>\w+): (?P<value>.*)', v)
+            assert m is not None
+            return m.group('key'), m.group('value')
+
+        assert self.parent is None
+        file_header = self.node.children[0] # TODO assert it's paragram
+        assert file_header.type_ == 'Paragraph'
+        return [parse_fprop(c) for c in file_header.children]
 
     @property
     def tags(self) -> Set[str]:
+        tags: Set[str] = set() # TODO frozenset
+        if self.parent is None:
+            for k, v in self._get_file_props():
+                if k != 'FILETAGS':
+                    continue
+                for t in v.split(':'):
+                    if len(t.strip()) == 0:
+                        continue
+                    tags.add(t)
+        return tags
+        # TODO hack here to split tags off?
+        import ipdb; ipdb.set_trace()
         return set(self.node.get_all_tags(use_tag_inheritance=True))
 
     @property

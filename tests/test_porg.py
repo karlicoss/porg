@@ -30,9 +30,20 @@ def load_test_file():
 def test_basic():
     org = load_test_file()
     # TODO scheduling test / clock / properties
-    assert 'xxxx' in org.tags
+    assert 'xxxx' in org.tags # TODO hmm it's a filetag..
     node = find(org, 'CLOCK')
     assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
+
+
+def test_basic_2():
+    org = Org.from_string("""
+#+PROP: 123
+#+FILETAGS: :filetag1:filetag2:
+
+* some heading
+""".lstrip())
+    assert org.tags == {'filetag1', 'filetag2'}
+
 
 ORG = """
 somthing on top...
