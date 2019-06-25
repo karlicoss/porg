@@ -117,6 +117,7 @@ top
 def test_root():
     org = Org.from_string(_root_org)
 
+    assert org.heading == ''
     assert org.tags == {'whatever', 'tag2'}
     assert org.self_tags == {'whatever', 'tag2'}
 
