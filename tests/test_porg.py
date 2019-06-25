@@ -35,7 +35,18 @@ def test_basic():
     assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
 
 
-def test_basic_2():
+def test_tags_parsing():
+    org = Org.from_string("""
+* heading1 :tag1:
+** heading2 :tag2:tag22:
+""".lstrip())
+    h1 = org.children[0]
+    h2 = h1.children[0]
+    assert h1.tags == {'tag1'}
+    assert g2.tags == {'tag2', 'tag22'}
+
+
+def test_filetags():
     org = Org.from_string("""
 #+PROP: 123
 #+FILETAGS: :filetag1:filetag2:

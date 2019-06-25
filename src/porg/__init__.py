@@ -130,8 +130,9 @@ class Org(Base):
         assert file_header.type_ == 'Paragraph'
         return [parse_fprop(c) for c in file_header.children]
 
+    # TODO cache? maybe make caching configurable... and measure the impact
     @property
-    def tags(self) -> Set[str]:
+    def tags(self) -> Set[str]: # TODO shouldn't include filetags if without inheritance?
         tags: Set[str] = set() # TODO frozenset
         if self.parent is None:
             for k, v in self._get_file_props():
@@ -141,6 +142,9 @@ class Org(Base):
                     if len(t.strip()) == 0:
                         continue
                     tags.add(t)
+
+        self.node.title
+        import ipdb; ipdb.set_trace() 
         return tags
         # TODO hack here to split tags off?
         import ipdb; ipdb.set_trace()
@@ -198,29 +202,32 @@ class Org(Base):
 
     @property
     def _content_split(self):
-        Table = PyOrgMode.OrgTable.Element
-        Scheduled = PyOrgMode.OrgSchedule.Element
-        Properties = PyOrgMode.OrgDrawer.Element
+        # Table = PyOrgMode.OrgTable.Element
+        # Scheduled = PyOrgMode.OrgSchedule.Element
+        # Properties = PyOrgMode.OrgDrawer.Element
 
-        cc = self.node.content
+        # TODO define 
+
         cont = []
         elems: List = []
         props = None
-        for i, c in enumerate(cc):
-            if isinstance(c, str):
-                # NOTE ok, various unparsed properties can be str... so we just concatenate them
-                # assert len(elems) == 0
-                cont.append(c)
-            elif isinstance(c, Properties):
-                if c.name == 'PROPERTIES':
-                    assert props is None, str(self)
-                # TODO add logbook to tests
-                    props = c
-            elif isinstance(c, Table):
-                cont.append(c)
-            elif not isinstance(c, (Scheduled,)): # TODO assert instance of OrgNode ekement...? # TODO for now just ignore drawer element
-                elems.append(c)
-        return (cont, elems, props)
+        for i, c in enumerate(self.node.children): # TODO shouldn't happen?
+            continue
+            # if isinstance(c, str):
+            #     # NOTE ok, various unparsed properties can be str... so we just concatenate them
+            #     # assert len(elems) == 0
+            #     cont.append(c)
+            # elif isinstance(c, Properties):
+            #     if c.name == 'PROPERTIES':
+            #         assert props is None, str(self)
+            #     # TODO add logbook to tests
+            #         props = c
+            # elif isinstance(c, Table):
+            #     cont.append(c)
+            # elif not isinstance(c, (Scheduled,)): # TODO assert instance of OrgNode ekement...? # TODO for now just ignore drawer element
+            #     elems.append(c)
+        return ("", self.node.children, "")
+        # return (cont, elems, props)
 
     @property
     def contents(self):
