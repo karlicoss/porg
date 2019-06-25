@@ -208,6 +208,7 @@ class Org(Base):
         except Exception as e:
             self._throw(e)
 
+    # TODO should be private?
     @property
     def contents(self) -> List[Union[str, OrgTable]]:
         TABLE_ROW = r'\s*(?P<cells>\|(.+\|)+)s*$'
@@ -233,12 +234,15 @@ class Org(Base):
                 res.append(OrgTable(rows, parent=self))
         return res
 
-    # TODO what's that used for??
+    @property
+    def body(self) -> str:
+        return '\n'.join(self.node._lines) if self.is_root() else self.node.body
+
+    # TODO not a great function... semantics is pretty confusing
     @property
     def content(self) -> str:
-        # TODO not sure, reuse orgparse functions? or we don't want tables?
-        conts = self.contents
-        return ''.join(c if isinstance(c, str) else str(c) for c in conts)
+        warnings.warn('Please use body instead', DeprecationWarning)
+        return ''.join(c if isinstance(c, str) else str(c) for c in self.contents)
 
     @property
     def content_recursive(self) -> str:

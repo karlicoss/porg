@@ -35,6 +35,11 @@ def test_basic():
     assert isinstance(node, Org)
     assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
 
+
+    assert org.body == '''
+#+FILETAGS: xxxx
+preamble...'''.lstrip()
+
 ORG = """
 somthing on top...
 
@@ -149,7 +154,6 @@ def test_table():
     org = load_test_file()
 
     tparent = org.xpath("//org[contains(heading, 'Table test')]")
-    print(tparent.contents)
     [table] = tparent.contents
     assert table.columns == ['elsbl', 'lesél', 'lseilép']
 
