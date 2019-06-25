@@ -115,8 +115,7 @@ def test_xpath():
     assert res.heading == 'TAGS TEST'
     assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
 
-def test_root():
-    o = """
+_root_org = """
 #+FILETAGS: whatever
 
 top
@@ -124,13 +123,26 @@ top
 * note2
 * note3
     """.lstrip()
-    org = Org.from_string(o)
 
-    root = org.xpath('//root')
-    assert root == org
+
+def test_root():
+    org = Org.from_string(_root_org)
 
     assert org.tags == {'whatever'}
     assert org.self_tags == {'whatever'}
+
+    # TODO not so sure about including filetags...
+    # TODO what semantics does heading have for root node??
+    assert org.get_raw(recursive=False) == """
+#+FILETAGS: whatever
+
+top""".lstrip()
+
+
+def test_root_xpath():
+    org = Org.from_string(_root_org)
+    root = org.xpath('//root')
+    assert root == org
 
     orgs = org.xpath_all('//org')
     assert len(orgs) == 3

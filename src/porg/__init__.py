@@ -242,8 +242,11 @@ class Org(Base):
 
     def _get_raw(self, heading: bool, recursive: bool) -> List[str]:
         lines: List[str] = []
-        # TODO FIXME careful with root
-        lines.extend(self.node._lines if heading else self.node._body_lines)
+        if self.is_root():
+            assert not heading, "Including heading doesn't make sense for root node"
+            lines.extend(self.node._lines)
+        else:
+            lines.extend(self.node._lines if heading else self.node._body_lines)
         if recursive:
             for c in self.children:
                 lines.extend(c._get_raw(heading=True, recursive=True))
