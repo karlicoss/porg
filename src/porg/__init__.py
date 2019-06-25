@@ -60,10 +60,11 @@ def parse_org_date(s: str) -> Dateish:
     else:
         raise RuntimeError(f"Bad date string {str(s)}")
 
-def _is_separator(ll: List[str]):
-    return all(all(c == '-' for c in s) for s in ll)
+def _is_separator(ll: str):
+    TABLE_SEP = r'\|(\-+\+)*\-+\|'
+    return re.match(TABLE_SEP, ll) is not None
 
-def _parse_org_table(lines: List[List[str]]) -> List[Dict[str, str]]:
+def _parse_org_table(lines: List[str]) -> List[Dict[str, str]]:
     before_first_sep: List[List[str]] = []
     after_first_sep: List[List[str]] = []
     cur = before_first_sep
@@ -71,7 +72,8 @@ def _parse_org_table(lines: List[List[str]]) -> List[Dict[str, str]]:
         if _is_separator(ll):
             cur = after_first_sep
             continue
-        cur.append(ll)
+        cells = ll.strip('|').split('|')
+        cur.append(cells)
 
     # TODO FIXME not sure how should the column names be treated if there are multiple lines before first separator...
     cols = before_first_sep[-1] # TODO FIXME is a table required to have column names at all?
@@ -90,7 +92,7 @@ class Base:
         self.parent = parent
 
 class OrgTable(Base):
-    def __init__(self, lines: List[List[str]],  parent):
+    def __init__(self, lines: List[str],  parent):
         super().__init__(parent=parent)
         self.table = _parse_org_table(lines)
 
@@ -208,7 +210,7 @@ class Org(Base):
 
     @property
     def contents(self) -> List[Union[str, OrgTable]]:
-        TABLE_ROW = r'\s*\|(?P<cells>(.+\|)+)s*$'
+        TABLE_ROW = r'\s*(?P<cells>\|(.+\|)+)s*$'
         if self.is_root():
             lines = self.node._lines
         else:
@@ -218,8 +220,7 @@ class Org(Base):
         for line in lines:
             m = re.match(TABLE_ROW, line)
             if m is not None:
-                cells = [c for c in re.split(r'[|+]', m.group('cells')) if c != ''] # TODO what do we do with separator??
-                items.append(cells)
+                items.append(m)
             else:
                 items.append(line)
 
@@ -228,8 +229,8 @@ class Org(Base):
             if t == type(''): # meh:
                 res.extend(g) # type: ignore
             else: # should be table cells?
-                cells = list(g)
-                res.append(OrgTable(cells, parent=self))
+                rows = [m.group('cells') for m in g]
+                res.append(OrgTable(rows, parent=self))
         return res
 
     # TODO what's that used for??

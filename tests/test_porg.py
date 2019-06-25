@@ -184,6 +184,30 @@ def test_table_xpath():
 
     assert isinstance(tentry, OrgTable)
 
+
+def test_table_xpath_2():
+    org = Org.from_string("""
+#+tblname: something
+| date                 | value | comment                       |
+|----------------------+-------+-------------------------------|
+| 14.04.17             |  11   | aaaa                          |
+| May 26 2017 08:00    |  12   | what + about + pluses?        |
+| May 26 09:00 - 10:00 |  13   | time is                       |
+
+    some comment
+
+#+BEGIN_SRC python :var fname="plot.png" :var table=something :results file
+fig.savefig(fname)
+return fname
+#+END_SRC
+
+#+RESULTS:
+[[file:plot.png]]
+""")
+    tbl = org.xpath('//table')
+    assert isinstance(tbl, OrgTable)
+
+
 def test_logbook():
     org = Org.from_string("""
 * TODO [#C] this broke my parser
