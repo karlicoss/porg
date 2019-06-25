@@ -130,7 +130,7 @@ class Org(Base):
         return x
 
     @property
-    def _filetags(self) -> Set[str]:
+    def _filetags(self) -> Set[str]: # TODO maybe, deserves to be non private?
         root = self._root
         ftags = root.node._special_comments.get('FILETAGS', [])
         return set(ftags)
@@ -138,14 +138,15 @@ class Org(Base):
     # TODO not sure if empty tags should be filtered?
     @property
     def tags(self) -> Set[str]:
-        # TODO is_root?
-        # TODO get_heading()?
         return self._filetags | set(self.node.tags)
 
+    # TODO FIXME hmm if self_tags threw exception, porg didn't seem to care... not sure how we want that to be handled
     @property
     def self_tags(self) -> Set[str]:
-        return set(self.node.shallow_tags)
-        # TODO FIXME hmm if self_tags threw exception, porg didn't seem to care... not sure how we want that to be handled
+        if self.is_root():
+            return self._filetags
+        else:
+            return set(self.node.shallow_tags)
 
     @property
     def _preheading(self):
@@ -164,6 +165,12 @@ class Org(Base):
     def heading(self) -> str:
         # TODO reuse orgparse?
         return self._preheading[0].strip()
+
+    def is_root(self) -> bool:
+        root = self.node.is_root()
+        no_parent = self.parent is None
+        assert root == no_parent # just in case during the transition period
+        return root
 
     # TODO cache..
     @property

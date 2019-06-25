@@ -117,15 +117,20 @@ def test_xpath():
 
 def test_root():
     o = """
+#+FILETAGS: whatever
+
 top
 * note1
 * note2
 * note3
-    """
+    """.lstrip()
     org = Org.from_string(o)
 
     root = org.xpath('//root')
     assert root == org
+
+    assert org.tags == {'whatever'}
+    assert org.self_tags == {'whatever'}
 
     orgs = org.xpath_all('//org')
     assert len(orgs) == 3
