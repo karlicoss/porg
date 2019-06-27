@@ -1,15 +1,67 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import pytest
-
+#!/usr/bin/env python3
+from pathlib import Path
 from datetime import datetime
 
 from porg import Org, OrgTable
 
+import pytest
+
 __author__ = "Dima Gerasimov"
 __copyright__ = "Dima Gerasimov"
 __license__ = "mit"
+
+
+def _load_test_file(name: str) -> Org:
+    return Org.from_file(Path(__file__).parent / 'data' / name)
+
+
+def test_file() -> Org:
+    return _load_test_file('test.org')
+
+
+def org_brain_file() -> Org:
+    # TODO need to touch every date and note
+    return _load_test_file('org-brain-readme.org')
+
+
+def org_sublime_file() -> Org:
+    return _load_test_file('sublime_text2_shortcuts.org')
+
+
+def test_heading():
+    org = test_file()
+    assert org.children[0].heading == 'Test Orgmode'
+
+
+def test_file_body():
+    org = test_file()
+    assert org.body == '''
+#+FILETAGS: :xxxx:yyy:
+preamble...'''.lstrip()
+
+
+def test_filetags():
+    org = test_file()
+    assert org.tags == {'xxxx', 'yyy'}
+
+
+def test_file_settings():
+    org = org_sublime_file()
+    assert org.file_settings == {
+        'TITLE' : ['Sublime Text 2 Shortcuts'],
+        'ROOT'  : ['Sublime Text 2'],
+        'AUTHOR': ['Sreejith Kesavan'],
+    }
+
+
+def test_unicode():
+    org = org_sublime_file()
+    assert org.children[0].children[1].heading == 'Go to Project (⌘ + Control + P)'
+
+
+def test_children():
+    org = org_sublime_file()
+    assert len(org.children[3].children) == 20
 
 
 def find(org: Org, heading: str):
@@ -20,25 +72,18 @@ def match(org: Org, hpart: str):
     [node] = ([n for n in org.iterate() if hpart in n.heading])
     return node
 
-def load_test_file():
-    # TODO import this file in project
-    fname = "/L/repos/PyOrgMode/PyOrgMode/test.org"
-    return Org.from_file(fname)
-    # TODO need to touch every date and note
 
-
-def test_basic():
-    org = load_test_file()
-    # TODO scheduling test / clock / properties
-    assert 'xxxx' in org.tags
-    node = find(org, 'CLOCK')
+def test_properties():
+    org = test_file()
+    node = find(org, 'entry with props')
     assert isinstance(node, Org)
-    assert node.properties == {'ORDERED': 't', 'CLOCKSUM': '0'}
 
+    assert node.properties == {
+        'CUSTOM_ID': 'alalal',
+        'PUBLISHED': '[2019-05-06 Mon 16:25]',
+    }
+    # TODO logbook?
 
-    assert org.body == '''
-#+FILETAGS: xxxx
-preamble...'''.lstrip()
 
 ORG = """
 somthing on top...
@@ -104,11 +149,20 @@ def test_dates():
 
 
 def test_xpath():
-    org = load_test_file()
-    res = org.xpath("//org[contains(heading, 'TAGS TEST')]")
+    org = org_brain_file()
+    res = org.xpath("//org[contains(heading, 'ifle')]")
 
-    assert res.heading == 'TAGS TEST'
-    assert res.tags == {'xxxx', 'TAG1', 'TAG2'}
+    assert res.heading == '[[https://github.com/alphapapa/helm-org-rifle][helm-org-rifle]]'
+    assert res.parent.heading == 'Other useful packages'
+
+
+def test_url_heading():
+    org = Org.from_string("""
+* [2016-05-14 Sat 15:33] [[https://www.reddit.com/r/androidapps/comments/4i36z9/how_you_use_your_android_to_the_maximum/d2uq24i][sc4s2cg comments on How you use your android to the maximum?]] :android:
+    """)
+
+    assert org.children[0].heading == '[[https://www.reddit.com/r/androidapps/comments/4i36z9/how_you_use_your_android_to_the_maximum/d2uq24i][sc4s2cg comments on How you use your android to the maximum?]]'
+
 
 _root_org = """
 #+FILETAGS: :whatever:tag2:
@@ -118,13 +172,6 @@ top
 * note2
 * note3
     """.lstrip()
-
-def test_heading():
-    org = Org.from_string("""
-* [2016-05-14 Sat 15:33] [[https://www.reddit.com/r/androidapps/comments/4i36z9/how_you_use_your_android_to_the_maximum/d2uq24i][sc4s2cg comments on How you use your android to the maximum?]] :android:
-    """)
-
-    assert org.children[0].heading == '[[https://www.reddit.com/r/androidapps/comments/4i36z9/how_you_use_your_android_to_the_maximum/d2uq24i][sc4s2cg comments on How you use your android to the maximum?]]'
 
 def test_root():
     org = Org.from_string(_root_org)
@@ -159,15 +206,17 @@ def test_root_xpath():
 
 
 def test_table():
-    org = load_test_file()
+    org = org_brain_file()
 
-    tparent = org.xpath("//org[contains(heading, 'Table test')]")
-    [table] = tparent.contents
-    assert table.columns == ['elsbl', 'lesél', 'lseilép']
+    tparent = org.xpath("//org[contains(heading, 'org-brain-visualize')]")
+    # TODO not sure how contents is meant to behave with respect to newlines..
+    [table1, _] = [c for c in tparent.contents if isinstance(c, OrgTable)]
+    assert table1.columns == ['Key', 'Command', 'Description']
 
-    assert table[(0, 'elsbl')] == 'dlitsléb'
+    assert table1[(0, 'Key')] == 'm' # meh
 
-    assert len(list(table.lines)) == 2
+    assert len(list(table1.lines)) == 25
+
 
 def test_single():
     o = """

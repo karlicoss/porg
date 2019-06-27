@@ -150,13 +150,14 @@ class Org(Base):
     def tags(self) -> Set[str]:
         return self._filetags | set(self.node.tags)
 
-    # TODO FIXME hmm if self_tags threw exception, porg didn't seem to care... not sure how we want that to be handled
+
     @property
     def self_tags(self) -> Set[str]:
         if self.is_root():
             return self._filetags
         else:
             return set(self.node.shallow_tags)
+
 
     @property
     def _preheading(self):
@@ -242,16 +243,19 @@ class Org(Base):
     def body(self) -> str:
         return '\n'.join(self.node._lines) if self.is_root() else self.node.get_body(format='raw')
 
+
     # TODO not a great function... semantics is pretty confusing
     @property
     def content(self) -> str:
         warnings.warn('Please use body instead', DeprecationWarning)
         return ''.join(c if isinstance(c, str) else str(c) for c in self.contents)
 
+
     @property
     def content_recursive(self) -> str:
         warnings.warn('Please use get_raw(recursive=True) instead', DeprecationWarning)
         return self.get_raw(heading=False, recursive=True)
+
 
     def _get_raw(self, heading: bool, recursive: bool) -> List[str]:
         lines: List[str] = []
@@ -265,7 +269,7 @@ class Org(Base):
                 lines.extend(c._get_raw(heading=True, recursive=True))
         return lines
 
-    # TODO FIXME hmm orparse extracts some of the timestamps...
+    # TODO hmm orparse extracts some of the timestamps...
     def get_raw(self, heading=False, recursive=False) -> str:
         return '\n'.join(self._get_raw(heading=heading, recursive=recursive))
 
@@ -331,6 +335,8 @@ class Org(Base):
                 'parent',
                 '_content_split',
                 '_root',
+                'content',
+                'content_recursive',
         ]:
             h.exclude(IfPType(Org), IfName(att))
 

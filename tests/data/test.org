@@ -1,3 +1,5 @@
+#+FILETAGS: :xxxx:yyy:
+preamble...
 * Test Orgmode
 ** List
 - Item 1
@@ -12,3 +14,17 @@
 -----
 Hello
 -----
+
+* TODO [#A] some task 
+  SCHEDULED: <2019-06-26 Wed> DEADLINE: <2019-06-27 Thu +3d -0d>
+  :LOGBOOK:
+  CLOCK: [2019-06-27 Thu 18:46]--[2019-06-27 Thu 18:46] =>  0:00
+  :END:
+
+
+* entry with props
+  :PROPERTIES:
+  :CUSTOM_ID: alalal
+  :PUBLISHED: [2019-05-06 Mon 16:25] 
+  :END:
+
