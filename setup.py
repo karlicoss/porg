@@ -22,5 +22,8 @@ except VersionConflict:
 
 if __name__ == "__main__":
     setup(
+        package_data = {
+            'porg': ['py.typed'],
+        },
         use_pyscaffold=True,
     )
