@@ -277,6 +277,13 @@ hello
 
 # TODO ugh; it's pretty slow now... I guess I should limit the interesting attributes somehow?...
 
+def test_broken_tags():
+    org = Org.from_string("""
+* [2018-07-11 Wed 21:14] for some reasong there is a newline before tags :( 
+  :social:talking:
+
+    """)
+    assert len(org.firstlevel()) == 1
 
 def test_bad_date():
     org = Org.from_string("""
