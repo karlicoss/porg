@@ -379,3 +379,23 @@ abacaba
     cc = c.children[0]
     assert cc.heading == 'database'
 
+
+
+def test_gh():
+    # covers https://github.com/tkf/orgparse/issues/1, just in case..
+    org = Org.from_string("""
+* H1
+** H2
+*** H3
+* H4
+** H5
+    """)
+    [h1, h4] = org.children
+    [h2] = h1.children
+    [h3] = h2.children
+    [h5] = h4.children
+    assert h1.heading == 'H1'
+    assert h2.heading == 'H2'
+    assert h3.heading == 'H3'
+    assert h4.heading == 'H4'
+    assert h5.heading == 'H5'
