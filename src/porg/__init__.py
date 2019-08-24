@@ -118,7 +118,7 @@ class Org(Base):
         self.node = root
 
     @classmethod
-    def from_file(cls, fname: str):
+    def from_file(cls, fname: Union[Path, str]):
         return cls.from_string(Path(fname).read_text())
 
     @staticmethod
