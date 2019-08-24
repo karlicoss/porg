@@ -249,6 +249,8 @@ def test_table_xpath():
 
 def test_table_xpath_2():
     org = Org.from_string("""
+* item
+
 #+tblname: something
 | date                 | value | comment                       |
 |----------------------+-------+-------------------------------|
@@ -266,7 +268,7 @@ return fname
 #+RESULTS:
 [[file:plot.png]]
 """)
-    tbl = org.xpath('//table')
+    tbl = org.xpath('//org//table')
     assert isinstance(tbl, OrgTable)
 
 
