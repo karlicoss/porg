@@ -22,8 +22,12 @@ except VersionConflict:
 
 if __name__ == "__main__":
     setup(
+        use_pyscaffold=True,
+        install_requires=[
+            'orgparse',
+            'hiccup @ git+https://github.com/karlicoss/hiccup.git@v0.5',
+        ],
         package_data = {
             'porg': ['py.typed'],
         },
-        use_pyscaffold=True,
     )
